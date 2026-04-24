@@ -175,7 +175,20 @@ p.form-sub { font-size: 13px; color: #7A7570; margin-bottom: 32px; font-family: 
 }
 .doc-cover .dc-quote { font-size: 10px; letter-spacing: 0.2em; color: #C9A46A; text-transform: uppercase; margin-bottom: 6px; }
 .doc-cover .dc-date  { font-size: 10px; letter-spacing: 0.15em; color: #7A7570; text-transform: uppercase; }
-.doc-cover .dc-logo  { font-size: 9px; letter-spacing: 0.28em; color: #C9A46A; text-transform: uppercase; margin-top: 36px; }
+.doc-cover .dc-logo-img { margin-top: 36px; }
+
+.doc-page-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 10px; border-top: 1px solid #e8e4dc; margin-top: 16px;
+}
+.doc-page-footer img {
+  height: 18px;
+  mix-blend-mode: multiply;
+  filter: invert(1);
+}
+.doc-page-footer .dpf-page {
+  font-size: 8px; letter-spacing: 0.15em; color: #aaa; text-transform: uppercase;
+}
 
 .doc-page { padding: 28px 36px; border-top: 1px solid #eee; }
 .doc-page-header {
@@ -537,7 +550,9 @@ function DocCover({ clientName, date, services }) {
       <div className="dc-client">{clientName || 'NOMBRE DEL CLIENTE'}</div>
       <div className="dc-quote">Cotización Servicios de Diseño</div>
       <div className="dc-date">{date || getToday()}</div>
-      <div className="dc-logo">Bloom Design Studio</div>
+      <div className="dc-logo-img">
+        <img src="https://raw.githubusercontent.com/efegomez/cotizador-bloom/main/Logo_Bloom_Design_Studio02.png" alt="Bloom Design Studio" style={{height:'38px', mixBlendMode:'screen'}} />
+      </div>
     </div>
   );
 }
@@ -669,6 +684,10 @@ function DocServicePage({ svcConfig }) {
           <div className="doc-scope-text">{svcConfig.customNote}</div>
         </div>
       )}
+      <div className="doc-page-footer">
+        <img src="https://raw.githubusercontent.com/efegomez/cotizador-bloom/main/Logo_Bloom_Design_Studio02.png" alt="Bloom Design Studio" />
+        <span className="dpf-page">Bloom Design Studio</span>
+      </div>
     </div>
   );
 }
@@ -696,6 +715,10 @@ function DocPaymentPage({ services }) {
       <div>
         <div className="dp-label">Términos y condiciones</div>
         <div className="dp-terms" style={{whiteSpace:'pre-line'}}>{TERMS}</div>
+      </div>
+      <div className="doc-page-footer">
+        <img src="https://raw.githubusercontent.com/efegomez/cotizador-bloom/main/Logo_Bloom_Design_Studio02.png" alt="Bloom Design Studio" />
+        <span className="dpf-page">Bloom Design Studio</span>
       </div>
     </div>
   );
@@ -1378,7 +1401,8 @@ tr.price td:first-child { text-align: left; font-size: 8pt; text-transform: uppe
 .page:last-child { page-break-after: auto; }
 .cover { background: #141210; color: #F0EBE1; min-height: 100vh; display: flex;
          flex-direction: column; justify-content: center; align-items: center;
-         text-align: center; padding: 60pt 50pt; }
+         text-align: center; padding: 60pt 50pt;
+         page-break-after: always; break-after: page; }
 .cover h1 { color: #F0EBE1; margin-bottom: 24pt; }
 .cover-sub   { font-size: 9pt; letter-spacing: 3pt; color: #C9A46A; text-transform: uppercase; margin-bottom: 8pt; font-weight: 400; }
 .cover-date  { font-size: 9pt; letter-spacing: 2pt; color: #7A7570; text-transform: uppercase; font-weight: 400; }
@@ -1395,6 +1419,9 @@ tr.price td:first-child { text-align: left; font-size: 8pt; text-transform: uppe
 .payment-text  { font-size: 10pt; color: #D4CFC7; line-height: 2; white-space: pre-line; margin-bottom: 18pt; font-weight: 400; }
 .terms { font-size: 8.5pt; color: #8A8580; line-height: 1.9; white-space: pre-line; font-weight: 400; }
 .note-bar { border-left: 2pt solid #C9A46A; padding-left: 8pt; font-size: 9pt; color: #555; font-style: italic; margin: 10pt 0; font-weight: 400; }
+.page-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 8pt; border-top: 1pt solid #e8e4dc; margin-top: 16pt; }
+.page-footer img { height: 16pt; filter: invert(1) brightness(0); }
+.page-footer span { font-size: 7pt; letter-spacing: 2pt; color: #aaa; text-transform: uppercase; font-family: 'Inter', sans-serif; }
 </style></head><body>`;
 
     // Cover
@@ -1402,7 +1429,7 @@ tr.price td:first-child { text-align: left; font-size: 8pt; text-transform: uppe
   <h1>${clientName || 'CLIENTE'}</h1>
   <p class="cover-sub">Cotización Servicios de Diseño</p>
   <p class="cover-date">${date}</p>
-  <p class="cover-studio">Bloom Design Studio</p>
+  <img src="https://raw.githubusercontent.com/efegomez/cotizador-bloom/main/Logo_Bloom_Design_Studio02.png" alt="Bloom Design Studio" style="height:36pt;margin-top:36pt;opacity:0.9;"/>
   <p style="font-size:7.5pt;letter-spacing:2pt;color:#4A4540;text-transform:uppercase;margin-top:16pt;">${quoteNumber}</p>
 </div>`;
 
@@ -1466,6 +1493,7 @@ tr.price td:first-child { text-align: left; font-size: 8pt; text-transform: uppe
       if (def.inputs)   html += `<p class="scope-title">Insumos</p><p class="scope-text">${def.inputs}</p>`;
       if (def.addl)     html += `<p class="scope-title">Servicios adicionales</p><p class="scope-text">${def.addl}</p>`;
       if (svc.customNote) html += `<p class="scope-title">Notas adicionales</p><p class="scope-text">${svc.customNote}</p>`;
+      html += `<div class='page-footer'><img src='https://raw.githubusercontent.com/efegomez/cotizador-bloom/main/Logo_Bloom_Design_Studio02.png' alt='Bloom'/><span>Bloom Design Studio</span></div>`;
       html += `</div>`;
     });
 
@@ -1477,6 +1505,7 @@ tr.price td:first-child { text-align: left; font-size: 8pt; text-transform: uppe
     html += `<p class="payment-text">Transferencia Bancaria<br/>DANIELA GÓMEZ SAA - CC: 1144070977<br/>Bancolombia — Cuenta de Ahorros No. 825 00000 633</p>`;
     html += `<p class="label" style="margin-top:20pt;">Términos y condiciones</p>`;
     html += `<p class="terms">${TERMS}</p>`;
+    html += `<div class='page-footer'><img src='https://raw.githubusercontent.com/efegomez/cotizador-bloom/main/Logo_Bloom_Design_Studio02.png' alt='Bloom'/><span>Bloom Design Studio</span></div>`;
     html += `</div>`;
 
     // Si es modo impresión: agregar script de autoprint y retornar HTML
