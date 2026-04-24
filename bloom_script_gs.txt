@@ -1,0 +1,830 @@
+// ══════════════════════════════════════════════════════════════════════════════
+// BLOOM DESIGN STUDIO — Apps Script v7 (con Elaborado Por)
+// Columnas hoja Cotizaciones:
+// A=Fecha, B=Cliente, C=Elaborado Por, D=Servicios,
+// E=Total Min, F=Total Max, G=Oro, H=Plata, I=Bronce,
+// J=Estado, K=Notas, L=Mes, M=N Cot
+// ══════════════════════════════════════════════════════════════════════════════
+
+function doPost(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let s = ss.getSheetByName('Cotizaciones') || ss.insertSheet('Cotizaciones');
+    if (s.getLastRow() === 0) {
+      s.appendRow(['Fecha','Cliente','Elaborado Por','Servicios','Total Min','Total Max','Oro','Plata','Bronce','Estado','Notas','Mes','N Cot']);
+      s.getRange(1,1,1,13).setBackground('#141210').setFontColor('#C9A46A').setFontWeight('bold');
+    } else {
+      var hdr = s.getRange(1,13).getValue();
+      if (!hdr || hdr === '') s.getRange(1,13).setValue('N Cot').setBackground('#141210').setFontColor('#C9A46A').setFontWeight('bold');
+    }
+    const d = JSON.parse(e.postData.contents);
+    // LOG temporal — escribir en hoja Log para debug
+    var logSheet = ss.getSheetByName('_Log') || ss.insertSheet('_Log');
+    logSheet.appendRow([new Date(), JSON.stringify(d)]);
+    var fechaUp = (d.fecha||'').toUpperCase().trim();
+    var parts = fechaUp.split(/\s+DE\s+/);
+    var mes = (parts.length >= 3) ? (parts[1]+' '+parts[2]) : fechaUp;
+    // Convertir valores: texto vacío para strings, null para numéricos vacíos
+    var toStr = function(v){ return (v === null || v === undefined) ? '' : String(v); };
+    var toNum = function(v){ return (v === null || v === undefined || v === '') ? null : Number(v); };
+
+    // Usar la columna B (Cliente) como ancla para encontrar la última fila real
+    var lastRow = s.getLastRow() + 1;
+    // Verificar que la fila anterior tenga cliente, si no buscar hacia arriba
+    while (lastRow > 2 && s.getRange(lastRow - 1, 2).getValue() === '') {
+      lastRow--;
+    }
+
+    // Escribir celda por celda para control total
+    s.getRange(lastRow, 1).setNumberFormat('@').setValue(toStr(d.fecha));
+    s.getRange(lastRow, 2).setValue(toStr(d.cliente));
+    s.getRange(lastRow, 3).setValue(toStr(d.elaboradoPor));
+    s.getRange(lastRow, 4).setValue(toStr(d.servicios));
+
+    // Escribir cada campo numérico en su columna exacta — sin forEach para evitar bugs de índice
+    var _min    = toNum(d.totalMin);    s.getRange(lastRow, 5).setValue(_min    !== null ? _min    : ''); if (_min    !== null) s.getRange(lastRow, 5).setNumberFormat('$ #,##0');
+    var _max    = toNum(d.totalMax);    s.getRange(lastRow, 6).setValue(_max    !== null ? _max    : ''); if (_max    !== null) s.getRange(lastRow, 6).setNumberFormat('$ #,##0');
+    var _oro    = toNum(d.totalOro);    s.getRange(lastRow, 7).setValue(_oro    !== null ? _oro    : ''); if (_oro    !== null) s.getRange(lastRow, 7).setNumberFormat('$ #,##0');
+    var _plata  = toNum(d.totalPlata);  s.getRange(lastRow, 8).setValue(_plata  !== null ? _plata  : ''); if (_plata  !== null) s.getRange(lastRow, 8).setNumberFormat('$ #,##0');
+    var _bronce = toNum(d.totalBronce); s.getRange(lastRow, 9).setValue(_bronce !== null ? _bronce : ''); if (_bronce !== null) s.getRange(lastRow, 9).setNumberFormat('$ #,##0');
+
+    s.getRange(lastRow, 10).setValue(toStr(d.estado) || 'Enviada');
+    s.getRange(lastRow, 11).setValue(toStr(d.notas));
+    s.getRange(lastRow, 12).setValue(mes);
+    s.getRange(lastRow, 13).setValue(toStr(d.numeroCot));
+    return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet() {
+  return ContentService.createTextOutput('Bloom API activa');
+}
+
+// ── Paleta ────────────────────────────────────────────────────────────────────
+var BG='#0F0D0B', D='#141210', D2='#191714', D3='#1E1C18', GR='#2A2520',
+    GO='#C9A46A', CR='#F0EBE1', MT='#7A7570',
+    GN='#5AAA60', RD='#C06060', AM='#D4A840', BL='#7A88AA', AR='#6A6560',
+    PL='#A0A8B0', BR='#C08060';
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PARTE 1 — Hoja Cotizaciones con datos de prueba
+// Columnas: A=Fecha B=Cliente C=Elaborado Por D=Servicios
+//           E=TotalMin F=TotalMax G=Oro H=Plata I=Bronce
+//           J=Estado K=Notas L=Mes M=N Cot
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomParte1() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let cot = ss.getSheetByName('Cotizaciones');
+  if (cot) cot.clearContents(); else cot = ss.insertSheet('Cotizaciones');
+
+  cot.getRange(1,1,1,13).setValues([['Fecha','Cliente','Elaborado Por','Servicios','Total Min','Total Max','Oro','Plata','Bronce','Estado','Notas','Mes','N Cot']])
+     .setBackground('#141210').setFontColor('#C9A46A').setFontWeight('bold').setFontFamily('Arial').setFontSize(9);
+
+  const rows = [
+    ['15 DE ENERO DE 2026','ANDINA FOODS','Fernanda','Branding / Identidad de Marca, Packaging Caja',4976000,11840000,11840000,7696000,4976000,'Aprobada','Inicio en febrero','ENERO 2026','ANDINA_150126_001'],
+    ['20 DE ENERO DE 2026','CAFE RITUAL','Daniela','Branding / Identidad de Marca',3776000,9920000,9920000,6176000,3776000,'Aprobada','Paquete Oro aprobado','ENERO 2026','CAFE_200126_002'],
+    ['03 DE FEBRERO DE 2026','LUNA COSMETICS','Fernanda','Packaging Etiquetas, Key Visual',2421333,5301333,5301333,3621333,2421333,'En revision','Esperando feedback','FEBRERO 2026','LUNA_030226_003'],
+    ['10 DE FEBRERO DE 2026','VERDE NATURAL','Daniela','Packaging Empaque / Caja',1200000,1920000,1920000,1520000,1200000,'Enviada','','FEBRERO 2026','VERDE_100226_004'],
+    ['14 DE FEBRERO DE 2026','TOSTAO VERDE','Fernanda','Naming',986667,2106667,2106667,1466667,986667,'En espera','Pidio extension','FEBRERO 2026','TOSTAO_140226_005'],
+    ['01 DE MARZO DE 2026','FLOR DE CAMPO','Daniela','Branding / Identidad de Marca',3776000,9920000,9920000,6176000,3776000,'Rechazada','Presupuesto insuficiente','MARZO 2026','FLOR_010326_006'],
+    ['08 DE MARZO DE 2026','BODEGA ALTO','Fernanda','Packaging Etiquetas',480000,1120000,1120000,800000,480000,'Enviada','','MARZO 2026','BODEGA_080326_007'],
+    ['15 DE MARZO DE 2026','DULCES DON JULIO','Daniela','Packaging Caja, Packaging Etiquetas',1680000,3040000,3040000,2320000,1680000,'En revision','2 referencias','MARZO 2026','DULCES_150326_008'],
+    ['22 DE MARZO DE 2026','MIEL PURA','Fernanda','Key Visual',1941333,4181333,4181333,2821333,1941333,'Archivada','Proyecto pausado','MARZO 2026','MIEL_220326_009'],
+    ['02 DE ABRIL DE 2026','ARTESANIAS DEL PACIFICO','Daniela','ADN de Marca',640000,3600000,3600000,2240000,640000,'Enviada','Impacto social','ABRIL 2026','ARTESANIAS_020426_010'],
+  ];
+  cot.getRange(2,1,rows.length,13).setValues(rows);
+  cot.getRange(2,5,rows.length,5).setNumberFormat('$ #,##0');
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('Parte 1 lista. Ejecuta bloomParte2.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PARTE 2 — Dashboard: shell + encabezado + filtros + KPIs
+// Referencias de columnas actualizadas:
+//   G=Oro(col7) H=Plata(col8) I=Bronce(col9) J=Estado(col10) L=Mes(col12)
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomParte2() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let d = ss.getSheetByName('Dashboard');
+  if (d) ss.deleteSheet(d);
+  d = ss.insertSheet('Dashboard', 0);
+  d.setHiddenGridlines(true);
+  d.setTabColor('C9A46A');
+
+  d.setColumnWidth(1, 18);
+  d.setColumnWidths(2, 7, 140);
+  d.setColumnWidth(9, 140);
+  d.setColumnWidth(10, 18);
+
+  d.getRange(1,1,60,10).setBackground(BG).setFontFamily('Arial');
+  SpreadsheetApp.flush();
+
+  // Encabezado
+  d.setRowHeight(2, 52);
+  d.setRowHeight(3, 18);
+  d.getRange(2,2,1,8).merge()
+    .setValue('BLOOM DESIGN STUDIO — DASHBOARD COMERCIAL')
+    .setBackground(D).setFontColor(GO).setFontSize(14).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  d.getRange(3,2,1,8).merge()
+    .setValue('Usa los filtros para actualizar todas las metricas')
+    .setBackground(D).setFontColor(MT).setFontSize(8)
+    .setHorizontalAlignment('center').setVerticalAlignment('middle')
+    .setBorder(false,false,true,false,false,false,'#3A3530',SpreadsheetApp.BorderStyle.SOLID);
+  SpreadsheetApp.flush();
+
+  // Filtros
+  d.setRowHeight(5, 24);
+  d.setRowHeight(6, 38);
+  d.setRowHeight(7, 8);
+  d.getRange(5,2,1,8).merge()
+    .setValue('  FILTROS')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle');
+  d.getRange(6,2,1,8).setValues([['Estado:','','Servicio:','','Periodo:','','Elaborado Por:','']])
+    .setBackground(D2).setFontColor(MT).setFontSize(9).setVerticalAlignment('middle');
+  d.getRange(6,2).setHorizontalAlignment('right');
+  d.getRange(6,4).setHorizontalAlignment('right');
+  d.getRange(6,6).setHorizontalAlignment('right');
+  d.getRange(6,8).setHorizontalAlignment('right');
+
+  var estados = ['Todos','Aprobada','En revision','Enviada','En espera','Rechazada','Archivada'];
+  var servicios = ['Todos','Branding','Packaging','Etiquetas','Key Visual','Naming','ADN de Marca'];
+  var periodos = ['Todos','ENERO 2026','FEBRERO 2026','MARZO 2026','ABRIL 2026','MAYO 2026'];
+
+  d.getRange(6,3).setValue('Todos').setBackground(D).setFontColor(GO).setFontSize(10).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle')
+    .setBorder(true,true,true,true,false,false,GO,SpreadsheetApp.BorderStyle.SOLID)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(estados,true).build());
+  d.getRange(6,5).setValue('Todos').setBackground(D).setFontColor(GO).setFontSize(10).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle')
+    .setBorder(true,true,true,true,false,false,GO,SpreadsheetApp.BorderStyle.SOLID)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(servicios,true).build());
+  d.getRange(6,7).setValue('Todos').setBackground(D).setFontColor(GO).setFontSize(10).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle')
+    .setBorder(true,true,true,true,false,false,GO,SpreadsheetApp.BorderStyle.SOLID)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(periodos,true).build());
+  var elaboradores = ['Todos','Fernanda','Daniela','Sin asignar'];
+  d.getRange(6,9).setValue('Todos').setBackground(D).setFontColor(GO).setFontSize(10).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle')
+    .setBorder(true,true,true,true,false,false,GO,SpreadsheetApp.BorderStyle.SOLID)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(elaboradores,true).build());
+  SpreadsheetApp.flush();
+
+  // KPIs — columnas actualizadas: G=Oro, H=Plata, I=Bronce, J=Estado, L=Mes
+  var FE='$C$6', FS='$E$6', FP='$G$6', FEB='$I$6';
+  var FLT='(IF('+FE+'="Todos",1,Cotizaciones!J$2:J$500='+FE+'))*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))';
+  var CF='=SUMPRODUCT('+FLT+'*(Cotizaciones!A$2:A$500<>""))';
+  var SF_F='=SUMPRODUCT('+FLT+'*Cotizaciones!G$2:G$500)';
+  var SF_G='=SUMPRODUCT('+FLT+'*Cotizaciones!H$2:H$500)';
+  var SF_H='=SUMPRODUCT('+FLT+'*IFERROR(VALUE(Cotizaciones!I$2:I$500),0))';
+  var AF='=SUMPRODUCT((Cotizaciones!J$2:J$500="Aprobada")*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*Cotizaciones!F$2:F$500)';
+  var CV='=IFERROR(SUMPRODUCT((Cotizaciones!J$2:J$500="Aprobada")*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*(Cotizaciones!A$2:A$500<>""))/SUMPRODUCT('+FLT+'*(Cotizaciones!A$2:A$500<>"")),0)';
+
+  d.setRowHeight(8, 24);
+  d.setRowHeight(9, 54);
+  d.setRowHeight(10, 20);
+  d.setRowHeight(11, 10);
+  d.setRowHeight(12, 34);
+  d.setRowHeight(13, 12);
+
+  d.getRange(8,2,1,8).merge()
+    .setValue('  METRICAS FILTRADAS')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle');
+
+  d.getRange(9,2).setFormula(CF).setBackground(D).setFontColor(CR).setFontSize(15).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  d.getRange(9,3).setFormula(SF_F).setBackground(D).setFontColor(GO).setFontSize(15).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('$ #,##0');
+  d.getRange(9,4).setFormula(SF_G).setBackground(D).setFontColor(PL).setFontSize(15).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('$ #,##0');
+  d.getRange(9,5).setFormula(SF_H).setBackground(D).setFontColor(BR).setFontSize(15).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('$ #,##0');
+  d.getRange(9,6).setFormula(AF).setBackground(D).setFontColor(GN).setFontSize(15).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('$ #,##0');
+  d.getRange(9,7).setFormula(CV).setBackground(D).setFontColor(GN).setFontSize(15).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('0.0%');
+  SpreadsheetApp.flush();
+
+  d.getRange(10,2,1,8).setValues([['COTIZACIONES','PIPELINE ORO','PIPELINE PLATA','PIPELINE BRONCE','APROBADO','CONVERSION','','']])
+    .setBackground(D).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  d.getRange(9,2,2,8).setBorder(true,true,true,true,false,false,GR,SpreadsheetApp.BorderStyle.SOLID);
+
+  d.getRange(12,2,1,8).setValues([['Ticket promedio (Plata)','','','% Aprobado vs Pipeline','','','','']])
+    .setBackground(D2).setFontColor(MT).setFontSize(9).setVerticalAlignment('middle');
+  d.getRange(12,3).setFormula('=IFERROR('+SF_G.slice(1)+'/'+CF.slice(1)+',0)')
+    .setNumberFormat('$ #,##0').setFontColor(GO).setFontSize(13).setFontWeight('bold').setHorizontalAlignment('center').setBackground(D2);
+  d.getRange(12,6).setFormula('=IFERROR('+AF.slice(1)+'/'+SF_G.slice(1)+',0)')
+    .setNumberFormat('0.0%').setFontColor(GN).setFontSize(13).setFontWeight('bold').setHorizontalAlignment('center').setBackground(D2);
+  SpreadsheetApp.flush();
+
+  SpreadsheetApp.getUi().alert('Parte 2 lista. Ejecuta bloomParte3.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PARTE 3 — Tablas por Estado, Servicio, Periodo y Detalle
+// Columnas: G=Oro H=Plata I=Bronce J=Estado L=Mes D=Servicios
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomParte3() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const d  = ss.getSheetByName('Dashboard');
+  if (!d) { SpreadsheetApp.getUi().alert('Primero ejecuta bloomParte1 y bloomParte2.'); return; }
+
+  var r = 14;
+
+  // ── Por Estado ───────────────────────────────────────────────────────────────
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,8).merge().setValue('  DESGLOSE POR ESTADO')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle'); r++;
+  d.setRowHeight(r,20);
+  d.getRange(r,2,1,6).setValues([['ESTADO','# COT.','ORO','PLATA','BRONCE','% TOTAL']])
+    .setBackground(GR).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle'); r++;
+
+  var ests=[{n:'Aprobada',c:GN},{n:'En revision',c:AM},{n:'Enviada',c:GO},
+            {n:'En espera',c:BL},{n:'Rechazada',c:RD},{n:'Archivada',c:AR}];
+  d.setRowHeights(r,ests.length,22);
+  d.getRange(r,2,ests.length,6)
+    .setBackgrounds(ests.map(function(_,i){return Array(6).fill(i%2===0?D2:D3);}))
+    .setFontColors(ests.map(function(e){return [e.c,CR,GO,PL,BR,e.c];}))
+    .setFontSize(10).setVerticalAlignment('middle');
+  d.getRange(r,2,ests.length,1).setValues(ests.map(function(e){return [e.n];})).setFontWeight('bold').setHorizontalAlignment('left');
+  d.getRange(r,3,ests.length,1).setHorizontalAlignment('center');
+  d.getRange(r,4,ests.length,3).setNumberFormats(ests.map(function(){return ['$ #,##0','$ #,##0','$ #,##0'];})).setHorizontalAlignment('right');
+  d.getRange(r,7,ests.length,1).setNumberFormats(ests.map(function(){return ['0.0%'];})).setHorizontalAlignment('center');
+  d.getRange(r,3,ests.length,5).setFormulas(ests.map(function(e){return [
+    '=COUNTIF(Cotizaciones!J2:J,"'+e.n+'")',
+    '=SUMIF(Cotizaciones!J2:J,"'+e.n+'",Cotizaciones!G2:G)',
+    '=SUMIF(Cotizaciones!J2:J,"'+e.n+'",Cotizaciones!H2:H)',
+    '=SUMIF(Cotizaciones!J2:J,"'+e.n+'",IFERROR(VALUE(Cotizaciones!I2:I),0))',
+    '=IFERROR(COUNTIF(Cotizaciones!J2:J,"'+e.n+'")/COUNTA(Cotizaciones!A2:A),0)',
+  ];}));
+  r += ests.length;
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,6).setValues([['TOTAL','=COUNTA(Cotizaciones!A2:A)','=SUM(Cotizaciones!G2:G)','=SUM(Cotizaciones!H2:H)','=SUMPRODUCT(IFERROR(VALUE(Cotizaciones!I2:I),0))','100%']])
+    .setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  d.getRange(r,4,1,3).setNumberFormats([['$ #,##0','$ #,##0','$ #,##0']]);
+  r++; d.setRowHeight(r,12); r++;
+  SpreadsheetApp.flush();
+
+  // ── Por Servicio ─────────────────────────────────────────────────────────────
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,8).merge().setValue('  DESGLOSE POR SERVICIO')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle'); r++;
+  d.setRowHeight(r,20);
+  d.getRange(r,2,1,6).setValues([['SERVICIO','# COT.','ORO','PLATA','BRONCE','% TOTAL']])
+    .setBackground(GR).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle'); r++;
+
+  var svcs=[{n:'Branding',m:'Branding'},{n:'Packaging Caja',m:'Packaging Caja'},
+            {n:'Etiquetas',m:'Etiquetas'},{n:'Key Visual',m:'Key Visual'},
+            {n:'Naming',m:'Naming'},{n:'ADN de Marca',m:'ADN de Marca'}];
+  d.setRowHeights(r,svcs.length,22);
+  d.getRange(r,2,svcs.length,6)
+    .setBackgrounds(svcs.map(function(_,i){return Array(6).fill(i%2===0?D2:D3);}))
+    .setFontColors(svcs.map(function(){return [CR,CR,GO,PL,BR,GO];}))
+    .setFontSize(10).setVerticalAlignment('middle');
+  d.getRange(r,2,svcs.length,1).setValues(svcs.map(function(s){return [s.n];})).setHorizontalAlignment('left');
+  d.getRange(r,3,svcs.length,1).setHorizontalAlignment('center');
+  d.getRange(r,4,svcs.length,3).setNumberFormats(svcs.map(function(){return ['$ #,##0','$ #,##0','$ #,##0'];}));
+  d.getRange(r,7,svcs.length,1).setNumberFormats(svcs.map(function(){return ['0.0%'];})).setHorizontalAlignment('center');
+  d.getRange(r,3,svcs.length,5).setFormulas(svcs.map(function(s){return [
+    '=COUNTIF(Cotizaciones!D2:D,"*'+s.m+'*")',
+    '=SUMIF(Cotizaciones!D2:D,"*'+s.m+'*",Cotizaciones!G2:G)',
+    '=SUMIF(Cotizaciones!D2:D,"*'+s.m+'*",Cotizaciones!H2:H)',
+    '=SUMIF(Cotizaciones!D2:D,"*'+s.m+'*",IFERROR(VALUE(Cotizaciones!I2:I),0))',
+    '=IFERROR(COUNTIF(Cotizaciones!D2:D,"*'+s.m+'*")/COUNTA(Cotizaciones!A2:A),0)',
+  ];}));
+  r += svcs.length; d.setRowHeight(r,12); r++;
+  SpreadsheetApp.flush();
+
+  // ── Por Periodo ──────────────────────────────────────────────────────────────
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,8).merge().setValue('  DESGLOSE POR PERIODO')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle'); r++;
+  d.setRowHeight(r,20);
+  d.getRange(r,2,1,6).setValues([['PERIODO','# COT.','ORO','PLATA','BRONCE','% TOTAL']])
+    .setBackground(GR).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle'); r++;
+
+  var pers=['ENERO 2026','FEBRERO 2026','MARZO 2026','ABRIL 2026','MAYO 2026'];
+  d.setRowHeights(r,pers.length,22);
+  d.getRange(r,2,pers.length,6)
+    .setBackgrounds(pers.map(function(_,i){return Array(6).fill(i%2===0?D2:D3);}))
+    .setFontColors(pers.map(function(){return [CR,CR,GO,PL,BR,GO];}))
+    .setFontSize(10).setVerticalAlignment('middle');
+  d.getRange(r,2,pers.length,1).setValues(pers.map(function(p){return [p];})).setHorizontalAlignment('left');
+  d.getRange(r,3,pers.length,1).setHorizontalAlignment('center');
+  d.getRange(r,4,pers.length,3).setNumberFormats(pers.map(function(){return ['$ #,##0','$ #,##0','$ #,##0'];}));
+  d.getRange(r,7,pers.length,1).setNumberFormats(pers.map(function(){return ['0.0%'];})).setHorizontalAlignment('center');
+  d.getRange(r,3,pers.length,5).setFormulas(pers.map(function(p){return [
+    '=COUNTIF(Cotizaciones!L2:L,"'+p+'")',
+    '=SUMIF(Cotizaciones!L2:L,"'+p+'",Cotizaciones!G2:G)',
+    '=SUMIF(Cotizaciones!L2:L,"'+p+'",Cotizaciones!H2:H)',
+    '=SUMIF(Cotizaciones!L2:L,"'+p+'",IFERROR(VALUE(Cotizaciones!I2:I),0))',
+    '=IFERROR(COUNTIF(Cotizaciones!L2:L,"'+p+'")/COUNTA(Cotizaciones!A2:A),0)',
+  ];}));
+  r += pers.length; d.setRowHeight(r,12); r++;
+  SpreadsheetApp.flush();
+
+  // ── Detalle ──────────────────────────────────────────────────────────────────
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,8).merge().setValue('  DETALLE DE COTIZACIONES')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle'); r++;
+  d.setRowHeight(r,20);
+  d.getRange(r,2,1,7).setValues([['CLIENTE','ELABORADO POR','SERVICIOS','ORO','PLATA','BRONCE','ESTADO']])
+    .setBackground(GR).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle'); r++;
+
+  var detN=15;
+  d.setRowHeights(r,detN,20);
+  d.getRange(r,2,detN,7)
+    .setBackgrounds(Array.from({length:detN},function(_,i){return Array(7).fill(i%2===0?D2:D3);}))
+    .setFontColors(Array(detN).fill([CR,GO,MT,GO,PL,BR,GO]))
+    .setFontSize(9).setVerticalAlignment('middle');
+  d.getRange(r,2,detN,1).setFontWeight('bold').setHorizontalAlignment('left');
+  d.getRange(r,5,detN,3).setNumberFormats(Array(detN).fill(['$ #,##0','$ #,##0','$ #,##0'])).setHorizontalAlignment('right');
+  d.getRange(r,2,detN,7).setFormulas(Array.from({length:detN},function(_,i){
+    var s=i+2;
+    return [
+      '=IFERROR(Cotizaciones!B'+s+',"")','=IFERROR(Cotizaciones!C'+s+',"")','=IFERROR(LEFT(Cotizaciones!D'+s+',28)&IF(LEN(Cotizaciones!D'+s+')>28,"...",""),"")','=IFERROR(Cotizaciones!G'+s+',"")','=IFERROR(Cotizaciones!H'+s+',"")','=IFERROR(Cotizaciones!I'+s+',"")','=IFERROR(Cotizaciones!J'+s+',"")'];
+  }));
+  SpreadsheetApp.flush();
+
+  SpreadsheetApp.getUi().alert('Dashboard completo. Corre bloomRebuild3 para activar filtros dinamicos.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// REBUILD3 — Reconstruye filas 14+ con filtros activos en todos los desgloses
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomRebuild3() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var d  = ss.getSheetByName('Dashboard');
+  if (!d) { SpreadsheetApp.getUi().alert('Primero crea el Dashboard con bloomParte2.'); return; }
+
+  var FE = '$C$6', FS = '$E$6', FP = '$G$6', FEB = '$I$6';
+
+  function fE(est) {
+    return '(Cotizaciones!J$2:J$500="'+est+'")'
+      +'*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))'
+      +'*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))'
+      +'*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))';
+  }
+  function fS(match) {
+    return '(ISNUMBER(SEARCH("'+match+'",Cotizaciones!D$2:D$500)))'
+      +'*(IF('+FE+'="Todos",1,Cotizaciones!J$2:J$500='+FE+'))'
+      +'*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))'
+      +'*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))';
+  }
+  function fP(per) {
+    return '(Cotizaciones!L$2:L$500="'+per+'")'
+      +'*(IF('+FE+'="Todos",1,Cotizaciones!J$2:J$500='+FE+'))'
+      +'*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))'
+      +'*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))';
+  }
+
+  d.getRange(14,1,120,10).clearContent().clearFormat().setBackground(BG);
+  SpreadsheetApp.flush();
+
+  var r = 14;
+
+  // ── DESGLOSE POR ESTADO ────────────────────────────────────────────────────
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,8).merge().setValue('  DESGLOSE POR ESTADO')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle'); r++;
+  d.setRowHeight(r,20);
+  d.getRange(r,2,1,6).setValues([['ESTADO','# COT.','ORO','PLATA','BRONCE','% TOTAL']])
+    .setBackground(GR).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle'); r++;
+
+  var ests = [{n:'Aprobada',c:GN},{n:'En revision',c:AM},{n:'Enviada',c:GO},
+              {n:'En espera',c:BL},{n:'Rechazada',c:RD},{n:'Archivada',c:AR}];
+  var estDataStart = r;
+  d.setRowHeights(r, ests.length, 22);
+  d.getRange(r,2,ests.length,6)
+    .setBackgrounds(ests.map(function(_,i){return Array(6).fill(i%2===0?D2:D3);}))
+    .setFontColors(ests.map(function(e){return [e.c,CR,GO,PL,BR,e.c];}))
+    .setFontSize(10).setVerticalAlignment('middle');
+  d.getRange(r,2,ests.length,1).setValues(ests.map(function(e){return [e.n];}))
+    .setFontWeight('bold').setHorizontalAlignment('left');
+  d.getRange(r,3,ests.length,1).setHorizontalAlignment('center');
+  d.getRange(r,4,ests.length,3).setNumberFormats(ests.map(function(){return ['$ #,##0','$ #,##0','$ #,##0'];}))
+    .setHorizontalAlignment('right');
+  d.getRange(r,7,ests.length,1).setNumberFormats(ests.map(function(){return ['0.0%'];}))
+    .setHorizontalAlignment('center');
+  d.getRange(r,3,ests.length,5).setFormulas(ests.map(function(e){
+    var f = fE(e.n);
+    return [
+      '=SUMPRODUCT('+f+'*(Cotizaciones!A$2:A$500<>""))',
+      '=SUMPRODUCT('+f+'*Cotizaciones!G$2:G$500)',
+      '=SUMPRODUCT('+f+'*Cotizaciones!H$2:H$500)',
+      '=SUMPRODUCT('+f+'*IFERROR(VALUE(Cotizaciones!I$2:I$500),0))',
+      '=IFERROR(SUMPRODUCT('+f+'*(Cotizaciones!A$2:A$500<>""))/SUMPRODUCT((IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))*(Cotizaciones!A$2:A$500<>"")),0)',
+    ];
+  }));
+  r += ests.length;
+  d.setRowHeight(r,24);
+  var er = estDataStart; var el = estDataStart + ests.length - 1;
+  d.getRange(r,2,1,6).setValues([['TOTAL','','','','','100%']])
+    .setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  d.getRange(r,3).setFormula('=SUM(C'+er+':C'+el+')').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('center');
+  d.getRange(r,4).setFormula('=SUM(D'+er+':D'+el+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  d.getRange(r,5).setFormula('=SUM(E'+er+':E'+el+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  d.getRange(r,6).setFormula('=SUM(F'+er+':F'+el+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  r++; d.setRowHeight(r,12); r++;
+  SpreadsheetApp.flush();
+
+  // ── DESGLOSE POR SERVICIO ─────────────────────────────────────────────────
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,8).merge().setValue('  DESGLOSE POR SERVICIO')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle'); r++;
+  d.setRowHeight(r,20);
+  d.getRange(r,2,1,6).setValues([['SERVICIO','# COT.','ORO','PLATA','BRONCE','% TOTAL']])
+    .setBackground(GR).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle'); r++;
+
+  var svcs = ['Branding','Packaging Caja','Etiquetas','Key Visual','Naming','ADN de Marca'];
+  var svcDataStart = r;
+  d.setRowHeights(r, svcs.length, 22);
+  d.getRange(r,2,svcs.length,6)
+    .setBackgrounds(svcs.map(function(_,i){return Array(6).fill(i%2===0?D2:D3);}))
+    .setFontColors(svcs.map(function(){return [CR,CR,GO,PL,BR,GO];}))
+    .setFontSize(10).setVerticalAlignment('middle');
+  d.getRange(r,2,svcs.length,1).setValues(svcs.map(function(s){return [s];}))
+    .setHorizontalAlignment('left');
+  d.getRange(r,3,svcs.length,1).setHorizontalAlignment('center');
+  d.getRange(r,4,svcs.length,3).setNumberFormats(svcs.map(function(){return ['$ #,##0','$ #,##0','$ #,##0'];}))
+    .setHorizontalAlignment('right');
+  d.getRange(r,7,svcs.length,1).setNumberFormats(svcs.map(function(){return ['0.0%'];}))
+    .setHorizontalAlignment('center');
+  d.getRange(r,3,svcs.length,5).setFormulas(svcs.map(function(svc){
+    var f = fS(svc);
+    return [
+      '=SUMPRODUCT('+f+'*(Cotizaciones!A$2:A$500<>""))',
+      '=SUMPRODUCT('+f+'*Cotizaciones!G$2:G$500)',
+      '=SUMPRODUCT('+f+'*Cotizaciones!H$2:H$500)',
+      '=SUMPRODUCT('+f+'*IFERROR(VALUE(Cotizaciones!I$2:I$500),0))',
+      '=IFERROR(SUMPRODUCT('+f+'*(Cotizaciones!A$2:A$500<>""))/SUMPRODUCT((IF('+FE+'="Todos",1,Cotizaciones!J$2:J$500='+FE+'))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))*(Cotizaciones!A$2:A$500<>"")),0)',
+    ];
+  }));
+  r += svcs.length;
+  d.setRowHeight(r,24);
+  var sr = svcDataStart; var sl = svcDataStart + svcs.length - 1;
+  d.getRange(r,2,1,6).setValues([['TOTAL','','','','','100%']])
+    .setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  d.getRange(r,3).setFormula('=SUM(C'+sr+':C'+sl+')').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('center');
+  d.getRange(r,4).setFormula('=SUM(D'+sr+':D'+sl+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  d.getRange(r,5).setFormula('=SUM(E'+sr+':E'+sl+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  d.getRange(r,6).setFormula('=SUM(F'+sr+':F'+sl+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  r++; d.setRowHeight(r,12); r++;
+  SpreadsheetApp.flush();
+
+  // ── DESGLOSE POR PERIODO ──────────────────────────────────────────────────
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,8).merge().setValue('  DESGLOSE POR PERIODO')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle'); r++;
+  d.setRowHeight(r,20);
+  d.getRange(r,2,1,6).setValues([['PERIODO','# COT.','ORO','PLATA','BRONCE','% TOTAL']])
+    .setBackground(GR).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle'); r++;
+
+  var pers = ['ENERO 2026','FEBRERO 2026','MARZO 2026','ABRIL 2026','MAYO 2026'];
+  var perDataStart = r;
+  d.setRowHeights(r, pers.length, 22);
+  d.getRange(r,2,pers.length,6)
+    .setBackgrounds(pers.map(function(_,i){return Array(6).fill(i%2===0?D2:D3);}))
+    .setFontColors(pers.map(function(){return [CR,CR,GO,PL,BR,GO];}))
+    .setFontSize(10).setVerticalAlignment('middle');
+  d.getRange(r,2,pers.length,1).setValues(pers.map(function(p){return [p];}))
+    .setHorizontalAlignment('left');
+  d.getRange(r,3,pers.length,1).setHorizontalAlignment('center');
+  d.getRange(r,4,pers.length,3).setNumberFormats(pers.map(function(){return ['$ #,##0','$ #,##0','$ #,##0'];}))
+    .setHorizontalAlignment('right');
+  d.getRange(r,7,pers.length,1).setNumberFormats(pers.map(function(){return ['0.0%'];}))
+    .setHorizontalAlignment('center');
+  d.getRange(r,3,pers.length,5).setFormulas(pers.map(function(per){
+    var f = fP(per);
+    return [
+      '=SUMPRODUCT('+f+'*(Cotizaciones!A$2:A$500<>""))',
+      '=SUMPRODUCT('+f+'*Cotizaciones!G$2:G$500)',
+      '=SUMPRODUCT('+f+'*Cotizaciones!H$2:H$500)',
+      '=SUMPRODUCT('+f+'*IFERROR(VALUE(Cotizaciones!I$2:I$500),0))',
+      '=IFERROR(SUMPRODUCT('+f+'*(Cotizaciones!A$2:A$500<>""))/SUMPRODUCT((IF('+FE+'="Todos",1,Cotizaciones!J$2:J$500='+FE+'))*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))*(Cotizaciones!A$2:A$500<>"")),0)',
+    ];
+  }));
+  r += pers.length;
+  d.setRowHeight(r,24);
+  var pr = perDataStart; var pl = perDataStart + pers.length - 1;
+  d.getRange(r,2,1,6).setValues([['TOTAL','','','','','100%']])
+    .setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle');
+  d.getRange(r,3).setFormula('=SUM(C'+pr+':C'+pl+')').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('center');
+  d.getRange(r,4).setFormula('=SUM(D'+pr+':D'+pl+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  d.getRange(r,5).setFormula('=SUM(E'+pr+':E'+pl+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  d.getRange(r,6).setFormula('=SUM(F'+pr+':F'+pl+')').setNumberFormat('$ #,##0').setBackground(GR).setFontColor(CR).setFontSize(10).setFontWeight('bold').setHorizontalAlignment('right');
+  r++; d.setRowHeight(r,12); r++;
+  SpreadsheetApp.flush();
+
+  // ── DETALLE con FILTER ────────────────────────────────────────────────────
+  d.setRowHeight(r,24);
+  d.getRange(r,2,1,8).merge().setValue('  DETALLE DE COTIZACIONES')
+    .setBackground(GR).setFontColor(GO).setFontSize(8).setFontWeight('bold')
+    .setHorizontalAlignment('left').setVerticalAlignment('middle'); r++;
+  d.setRowHeight(r,20);
+  d.getRange(r,2,1,7).setValues([['CLIENTE','ELABORADO POR','SERVICIOS','ORO','PLATA','BRONCE','ESTADO']])
+    .setBackground(GR).setFontColor(MT).setFontSize(7).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle'); r++;
+
+  var cond = 'IF('+FE+'="Todos",Cotizaciones!A$2:A$500<>"",Cotizaciones!J$2:J$500='+FE+')'
+    +'*IF('+FS+'="Todos",Cotizaciones!A$2:A$500<>"",ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500)))'
+    +'*IF('+FP+'="Todos",Cotizaciones!A$2:A$500<>"",Cotizaciones!L$2:L$500='+FP+')'
+    +'*IF('+FEB+'="Todos",Cotizaciones!A$2:A$500<>"",IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+'))'
+    +'*(Cotizaciones!A$2:A$500<>"")';
+
+  var vis = 50;
+  d.setRowHeights(r, vis, 20);
+  d.getRange(r,2,vis,7)
+    .setBackgrounds(Array.from({length:vis},function(_,i){return Array(7).fill(i%2===0?D2:D3);}))
+    .setFontColors(Array(vis).fill([CR,GO,MT,GO,PL,BR,GO]))
+    .setFontSize(9).setVerticalAlignment('middle');
+  d.getRange(r,2,vis,1).setFontWeight('bold').setHorizontalAlignment('left');
+  d.getRange(r,5,vis,3)
+    .setNumberFormats(Array(vis).fill(['$ #,##0','$ #,##0','$ #,##0']))
+    .setHorizontalAlignment('right');
+
+  d.getRange(r,2).setFormula('=IFERROR(FILTER(Cotizaciones!B$2:B$500,'+cond+'),"")');
+  d.getRange(r,3).setFormula('=IFERROR(FILTER(Cotizaciones!C$2:C$500,'+cond+'),"")');
+  d.getRange(r,4).setFormula('=IFERROR(FILTER(LEFT(Cotizaciones!D$2:D$500,30)&IF(LEN(Cotizaciones!D$2:D$500)>30,"...",""),'+cond+'),"")');
+  d.getRange(r,5).setFormula('=IFERROR(FILTER(Cotizaciones!G$2:G$500,'+cond+'),"")');
+  d.getRange(r,6).setFormula('=IFERROR(FILTER(Cotizaciones!H$2:H$500,'+cond+'),"")');
+  d.getRange(r,7).setFormula('=IFERROR(FILTER(Cotizaciones!I$2:I$500,'+cond+'),"")');
+  d.getRange(r,8).setFormula('=IFERROR(FILTER(Cotizaciones!J$2:J$500,'+cond+'),"")');
+
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('bloomRebuild3 completado.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIXKPIS3
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomFixKPIs3() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var d  = ss.getSheetByName('Dashboard');
+  if (!d) { SpreadsheetApp.getUi().alert('No existe el Dashboard.'); return; }
+
+  var FE = '$C$6', FS = '$E$6', FP = '$G$6', FEB = '$I$6';
+  var FLT = '(IF('+FE+'="Todos",1,Cotizaciones!J$2:J$500='+FE+'))*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))';
+
+  var AF = '=SUMPRODUCT((Cotizaciones!J$2:J$500="Aprobada")*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*Cotizaciones!F$2:F$500)';
+  d.getRange(9,6).setFormula(AF).setBackground(D).setFontColor(GN)
+    .setFontSize(15).setFontWeight('bold').setHorizontalAlignment('center')
+    .setVerticalAlignment('middle').setNumberFormat('$ #,##0');
+
+  var CF  = 'SUMPRODUCT('+FLT+'*(Cotizaciones!A$2:A$500<>""))';
+  var CAP = 'SUMPRODUCT((Cotizaciones!J$2:J$500="Aprobada")*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*(Cotizaciones!A$2:A$500<>""))';
+  d.getRange(9,7).setFormula('=IFERROR('+CAP+'/'+CF+',0)')
+    .setBackground(D).setFontColor(GN).setFontSize(15).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('0.0%');
+
+  d.getRange(10,6).setValue('APROBADO (Max)').setBackground(D).setFontColor(MT)
+    .setFontSize(7).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+  d.getRange(10,7).setValue('CONVERSION').setBackground(D).setFontColor(MT)
+    .setFontSize(7).setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+
+  var SF_F = 'SUMPRODUCT('+FLT+'*Cotizaciones!G$2:G$500)';
+  var SF_G = 'SUMPRODUCT('+FLT+'*Cotizaciones!H$2:H$500)';
+  var SF_H = 'SUMPRODUCT('+FLT+'*IFERROR(VALUE(Cotizaciones!I$2:I$500),0))';
+
+  d.getRange(12,2).setValue('Ticket promedio:')
+    .setBackground(D2).setFontColor(MT).setFontSize(8).setFontWeight('bold')
+    .setVerticalAlignment('middle').setHorizontalAlignment('right');
+  d.getRange(12,3).setFormula('=IFERROR('+SF_F+'/'+CF+',0)')
+    .setBackground(D2).setFontColor(GO).setFontSize(11).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('$ #,##0');
+  d.getRange(12,4).setFormula('=IFERROR('+SF_G+'/'+CF+',0)')
+    .setBackground(D2).setFontColor(PL).setFontSize(11).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('$ #,##0');
+  d.getRange(12,5).setFormula('=IFERROR('+SF_H+'/'+CF+',0)')
+    .setBackground(D2).setFontColor(BR).setFontSize(11).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('$ #,##0');
+  d.getRange(12,6).setValue('% Aprob. vs Pipeline:')
+    .setBackground(D2).setFontColor(MT).setFontSize(8).setFontWeight('bold')
+    .setVerticalAlignment('middle').setHorizontalAlignment('right');
+  d.getRange(12,7).setFormula('=IFERROR(('+AF.slice(1)+')/'+SF_F+',0)')
+    .setBackground(D2).setFontColor(GN).setFontSize(11).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle').setNumberFormat('0.0%');
+
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('bloomFixKPIs3 completado.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIXCONVERSION
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomFixConversion() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var d  = ss.getSheetByName('Dashboard');
+  if (!d) { SpreadsheetApp.getUi().alert('No existe el Dashboard.'); return; }
+
+  var FS = '$E$6', FP = '$G$6', FEB = '$I$6';
+  var CAP = 'SUMPRODUCT((Cotizaciones!J$2:J$500="Aprobada")'
+    +'*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))'
+    +'*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))'
+    +'*(Cotizaciones!A$2:A$500<>""))';
+  var CTot = 'SUMPRODUCT((IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))'
+    +'*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))'
+    +'*(Cotizaciones!A$2:A$500<>""))';
+
+  d.getRange(9,7).setFormula('=IFERROR('+CAP+'/'+CTot+',0)')
+    .setBackground('#141210').setFontColor('#5AAA60')
+    .setFontSize(15).setFontWeight('bold')
+    .setHorizontalAlignment('center').setVerticalAlignment('middle')
+    .setNumberFormat('0.0%');
+
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('Conversion corregida.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIXNCOT
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomFixNCot() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var s  = ss.getSheetByName('Cotizaciones');
+  if (!s) { SpreadsheetApp.getUi().alert('No existe la hoja Cotizaciones.'); return; }
+
+  var lastRow = s.getLastRow();
+  if (lastRow < 2) { SpreadsheetApp.getUi().alert('No hay datos.'); return; }
+
+  var data = s.getRange(2, 1, lastRow - 1, 13).getValues();
+  var counter = 1;
+  var updated = 0;
+
+  for (var i = 0; i < data.length; i++) {
+    var fecha   = (data[i][0] || '').toString().trim();
+    var cliente = (data[i][1] || '').toString().trim();
+    var ncot    = (data[i][12] || '').toString().trim(); // col M (index 12)
+
+    if (ncot !== '') continue;
+
+    var parts = fecha.toUpperCase().split(/\s+DE\s+/);
+    var ddmmyy = '';
+    if (parts.length >= 3) {
+      var dd  = parts[0].padStart(2,'0');
+      var mes = parts[1].substring(0,3);
+      var yy  = parts[2].slice(-2);
+      var meses = {ENE:'01',FEB:'02',MAR:'03',ABR:'04',MAY:'05',JUN:'06',
+                   JUL:'07',AGO:'08',SEP:'09',OCT:'10',NOV:'11',DIC:'12'};
+      var mm = meses[mes] || '00';
+      ddmmyy = dd + mm + yy;
+    } else {
+      ddmmyy = '000000';
+    }
+
+    var clienteClean = cliente.split(' ')[0]
+      .toUpperCase()
+      .replace(/[ÁÀÄÂ]/g,'A').replace(/[ÉÈËÊ]/g,'E')
+      .replace(/[ÍÌÏÎ]/g,'I').replace(/[ÓÒÖÔ]/g,'O')
+      .replace(/[ÚÙÜÛ]/g,'U').replace(/Ñ/g,'N')
+      .replace(/[^A-Z0-9]/g,'')
+      .substring(0, 8);
+
+    var nnn = counter.toString().padStart(3,'0');
+    var nuevoCot = clienteClean + '_' + ddmmyy + '_' + nnn;
+
+    s.getRange(i + 2, 13).setValue(nuevoCot); // col M
+    counter++;
+    updated++;
+  }
+
+  if (s.getRange(1,13).getValue() === '') {
+    s.getRange(1,13).setValue('N Cot').setBackground('#141210').setFontColor('#C9A46A').setFontWeight('bold');
+  }
+
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('bloomFixNCot: ' + updated + ' filas actualizadas.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIXFORMATOCOT
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomFixFormatoCot() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var s  = ss.getSheetByName('Cotizaciones');
+  if (!s) return;
+  var lastRow = s.getLastRow();
+  if (lastRow < 2) return;
+  s.getRange(2, 5, lastRow - 1, 5).setNumberFormat('$ #,##0');
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('Formato aplicado a ' + (lastRow-1) + ' filas.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FIXDETALLE2
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomFixDetalle2() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var d  = ss.getSheetByName('Dashboard');
+  if (!d) { SpreadsheetApp.getUi().alert('No existe el Dashboard.'); return; }
+
+  var FE = '$C$6', FS = '$E$6', FP = '$G$6';
+
+  var lastR = d.getLastRow();
+  var detHeaderRow = -1;
+  var colB = d.getRange(1, 2, lastR, 1).getValues();
+  for (var i = 0; i < colB.length; i++) {
+    if ((colB[i][0]||'').toString().indexOf('CLIENTE') !== -1) {
+      detHeaderRow = i + 1;
+      break;
+    }
+  }
+  if (detHeaderRow === -1) {
+    SpreadsheetApp.getUi().alert('No se encontro encabezado CLIENTE. Corre bloomRebuild3 primero.');
+    return;
+  }
+
+  var r = detHeaderRow + 1;
+  d.getRange(r, 1, 60, 8).clearContent().clearFormat().setBackground(BG);
+
+  var FEB = '$I$6';
+  var cond = 'IF('+FE+'="Todos",Cotizaciones!A$2:A$500<>"",Cotizaciones!J$2:J$500='+FE+')'
+    +'*IF('+FS+'="Todos",Cotizaciones!A$2:A$500<>"",ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500)))'
+    +'*IF('+FP+'="Todos",Cotizaciones!A$2:A$500<>"",Cotizaciones!L$2:L$500='+FP+')'
+    +'*IF('+FEB+'="Todos",Cotizaciones!A$2:A$500<>"",IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+'))'
+    +'*(Cotizaciones!A$2:A$500<>"")';
+
+  var vis = 50;
+  d.setRowHeights(r, vis, 20);
+  d.getRange(r, 2, vis, 7)
+    .setBackgrounds(Array.from({length:vis},function(_,i){return Array(7).fill(i%2===0?D2:D3);}))
+    .setFontColors(Array(vis).fill([CR,GO,MT,GO,PL,BR,GO]))
+    .setFontSize(9).setVerticalAlignment('middle');
+  d.getRange(r, 2, vis, 1).setFontWeight('bold').setHorizontalAlignment('left');
+  d.getRange(r, 5, vis, 3)
+    .setNumberFormats(Array(vis).fill(['$ #,##0','$ #,##0','$ #,##0']))
+    .setHorizontalAlignment('right');
+
+  d.getRange(r,2).setFormula('=IFERROR(FILTER(Cotizaciones!B$2:B$500,'+cond+'),"")');
+  d.getRange(r,3).setFormula('=IFERROR(FILTER(Cotizaciones!C$2:C$500,'+cond+'),"")');
+  d.getRange(r,4).setFormula('=IFERROR(FILTER(LEFT(Cotizaciones!D$2:D$500,30)&IF(LEN(Cotizaciones!D$2:D$500)>30,"...",""),'+cond+'),"")');
+  d.getRange(r,5).setFormula('=IFERROR(FILTER(Cotizaciones!G$2:G$500,'+cond+'),"")');
+  d.getRange(r,6).setFormula('=IFERROR(FILTER(Cotizaciones!H$2:H$500,'+cond+'),"")');
+  d.getRange(r,7).setFormula('=IFERROR(FILTER(Cotizaciones!I$2:I$500,'+cond+'),"")');
+  d.getRange(r,8).setFormula('=IFERROR(FILTER(Cotizaciones!J$2:J$500,'+cond+'),"")');
+
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('Detalle actualizado con FILTER — soporta 500 cotizaciones.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PROTECTDASHBOARD
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomProtectDashboard() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var d  = ss.getSheetByName('Dashboard');
+  if (!d) { SpreadsheetApp.getUi().alert('No existe el Dashboard.'); return; }
+
+  var existing = d.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+  existing.forEach(function(p){ p.remove(); });
+
+  var prot = d.protect().setDescription('Dashboard Bloom — solo filtros editables');
+  prot.setUnprotectedRanges([
+    d.getRange('C6'),
+    d.getRange('E6'),
+    d.getRange('G6')
+  ]);
+
+  var editors = prot.getEditors();
+  if (editors.length > 0) prot.removeEditors(editors);
+  if (prot.canDomainEdit()) prot.setDomainEdit(false);
+
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('Dashboard protegido. Solo C6, E6 y G6 son editables.');
+}
+// ══════════════════════════════════════════════════════════════════════════════
+// bloomFixKPIs — Solo actualiza el KPI de Bronce (E9) sin tocar el resto
+// Ejecutar una sola vez para corregir el #VALUE! del Pipeline Bronce
+// ══════════════════════════════════════════════════════════════════════════════
+function bloomFixKPIs() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var d  = ss.getSheetByName('Dashboard');
+  if (!d) { SpreadsheetApp.getUi().alert('No se encontró la hoja Dashboard.'); return; }
+
+  var FE='$C$6', FS='$E$6', FP='$G$6', FEB='$I$6';
+  var FLT='(IF('+FE+'="Todos",1,Cotizaciones!J$2:J$500='+FE+'))*(IF('+FS+'="Todos",1,ISNUMBER(SEARCH('+FS+',Cotizaciones!D$2:D$500))))*(IF('+FP+'="Todos",1,Cotizaciones!L$2:L$500='+FP+'))*(IF('+FEB+'="Todos",1,IF('+FEB+'="Sin asignar",Cotizaciones!C$2:C$500="",Cotizaciones!C$2:C$500='+FEB+')))';
+
+  // Corrección: envolver columna I en IFERROR(VALUE(...),0) para ignorar celdas vacías
+  var SF_H = '=SUMPRODUCT('+FLT+'*IFERROR(VALUE(Cotizaciones!I$2:I$500),0))';
+
+  d.getRange(9,5).setFormula(SF_H);
+  SpreadsheetApp.flush();
+  SpreadsheetApp.getUi().alert('✓ KPI Bronce corregido en E9.');
+}

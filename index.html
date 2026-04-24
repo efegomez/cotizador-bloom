@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cotizador — Bloom Design Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #0F0D0B; color: #F0EBE1; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1A1714; }
+::-webkit-scrollbar-thumb { background: #3A3530; border-radius: 3px; }
+
+/* ─── FORM PANEL ─────────────────────────────── */
+.app-left  { height: 100vh; overflow-y: auto; background: #0F0D0B; padding: 40px 36px; }
+.app-right { height: 100vh; overflow-y: auto; background: #1A1714; padding: 20px; border-left: 1px solid #2A2520; }
+
+.bloom-logo {
+  font-size: 11px; letter-spacing: 0.35em; color: #C9A46A;
+  text-transform: uppercase; margin-bottom: 32px; font-family: 'Inter', sans-serif; font-weight: 400;
+}
+.step-bar { display: flex; gap: 8px; margin-bottom: 40px; }
+.step-dot {
+  height: 3px; flex: 1; border-radius: 2px; background: #2A2520;
+  transition: background 0.3s;
+}
+.step-dot.active  { background: #C9A46A; }
+.step-dot.done    { background: #6B8E6B; }
+
+.step-label {
+  font-size: 10px; letter-spacing: 0.2em; color: #6B6560;
+  text-transform: uppercase; margin-bottom: 24px; font-family: 'Inter', sans-serif;
+}
+
+h2.form-title {
+  font-size: 22px; font-weight: 700; color: #F0EBE1;
+  margin-bottom: 8px; letter-spacing: 0.05em; font-family: 'Inter', sans-serif;
+}
+p.form-sub { font-size: 13px; color: #7A7570; margin-bottom: 32px; font-family: 'Inter', sans-serif; }
+
+/* ─── INPUTS ─────────────────────────────────── */
+.field { margin-bottom: 24px; }
+.field label {
+  display: block; font-size: 10px; letter-spacing: 0.2em;
+  color: #9A9590; text-transform: uppercase; margin-bottom: 8px;
+  font-family: 'Inter', sans-serif; font-weight: 400;
+}
+.field input, .field select, .field textarea {
+  width: 100%; background: #1A1714; border: 1px solid #2A2520;
+  color: #F0EBE1; padding: 12px 14px; font-size: 14px;
+  font-family: 'Inter', sans-serif; border-radius: 4px; outline: none;
+  transition: border-color 0.2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: #C9A46A;
+}
+.field textarea { resize: vertical; min-height: 80px; }
+.field select option { background: #1A1714; }
+
+/* ─── BUTTONS ────────────────────────────────── */
+.btn-gold {
+  background: #C9A46A; color: #0F0D0B; border: none;
+  padding: 13px 28px; font-size: 12px; letter-spacing: 0.15em;
+  text-transform: uppercase; cursor: pointer; border-radius: 3px;
+  font-family: 'Inter', sans-serif; font-weight: 600;
+  transition: background 0.2s; width: 100%; margin-top: 8px;
+}
+.btn-gold:hover { background: #D4B07A; }
+.btn-dark {
+  background: transparent; color: #9A9590; border: 1px solid #2A2520;
+  padding: 12px 28px; font-size: 12px; letter-spacing: 0.12em;
+  text-transform: uppercase; cursor: pointer; border-radius: 3px;
+  font-family: 'Inter', sans-serif; font-weight: 400;
+  transition: all 0.2s; width: 100%; margin-top: 8px;
+}
+.btn-dark:hover { border-color: #6A6560; color: #C0BBB5; }
+.btn-row { display: flex; gap: 10px; margin-top: 24px; }
+.btn-row .btn-dark { width: auto; flex: 1; }
+.btn-row .btn-gold { width: auto; flex: 2; }
+
+/* ─── SERVICE CARDS ──────────────────────────── */
+.service-grid { display: grid; gap: 10px; margin-bottom: 24px; }
+.service-card {
+  border: 1px solid #2A2520; border-radius: 6px; padding: 16px;
+  cursor: pointer; transition: all 0.2s; background: #141210;
+}
+.service-card:hover { border-color: #4A4540; }
+.service-card.selected { border-color: #C9A46A; background: #1E1A14; }
+.service-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.service-card-name {
+  font-size: 14px; color: #F0EBE1; margin-bottom: 4px;
+}
+.service-card-desc { font-size: 12px; color: #6A6560; font-family: 'Inter', sans-serif; }
+.service-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid #3A3530; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.2s;
+}
+.service-card.selected .service-check { background: #C9A46A; border-color: #C9A46A; }
+.service-check svg { display: none; }
+.service-card.selected .service-check svg { display: block; }
+
+/* ─── TIER SELECTOR ──────────────────────────── */
+.tier-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 8px 0 16px; }
+.tier-btn {
+  padding: 10px 8px; border: 1px solid #2A2520; border-radius: 4px;
+  text-align: center; cursor: pointer; transition: all 0.2s; background: #141210;
+}
+.tier-btn .tier-name { font-size: 11px; letter-spacing: 0.15em; color: #9A9590; text-transform: uppercase; font-family: 'Inter', sans-serif; }
+.tier-btn .tier-price { font-size: 11px; color: #6A6560; margin-top: 3px; font-family: 'Inter', sans-serif; }
+.tier-btn.active-oro   { border-color: #C9A46A; background: #1E1A14; }
+.tier-btn.active-oro .tier-name { color: #C9A46A; }
+.tier-btn.active-plata { border-color: #A0A8B0; background: #1A1E20; }
+.tier-btn.active-plata .tier-name { color: #A0A8B0; }
+.tier-btn.active-bronce { border-color: #C08060; background: #1E1614; }
+.tier-btn.active-bronce .tier-name { color: #C08060; }
+.tier-btn.active-alta  { border-color: #C9A46A; background: #1E1A14; }
+.tier-btn.active-alta .tier-name { color: #C9A46A; }
+.tier-btn.active-media { border-color: #A0A8B0; background: #1A1E20; }
+.tier-btn.active-media .tier-name { color: #A0A8B0; }
+.tier-btn.active-baja  { border-color: #C08060; background: #1E1614; }
+.tier-btn.active-baja .tier-name { color: #C08060; }
+
+.config-block {
+  border: 1px solid #2A2520; border-radius: 6px; padding: 20px;
+  margin-bottom: 16px; background: #141210;
+}
+.config-block-title {
+  font-size: 13px; color: #C9A46A; margin-bottom: 4px; letter-spacing: 0.05em; font-weight: 700; font-family: 'Inter', sans-serif;
+}
+.config-block-sub { font-size: 11px; color: #6A6560; margin-bottom: 14px; font-family: 'Inter', sans-serif; }
+
+/* ─── SUMMARY ────────────────────────────────── */
+.summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid #2A2520; font-family: 'Inter', sans-serif;
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-service { font-size: 13px; color: #D4CFC7; }
+.summary-tier-badge {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 2px; margin-left: 8px;
+  background: #2A2520; color: #9A9590;
+}
+.summary-price { font-size: 14px; color: #C9A46A; font-weight: 400; }
+.summary-total {
+  display: flex; justify-content: space-between;
+  padding: 16px 0 0; margin-top: 8px;
+}
+.summary-total-label {
+  font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: #9A9590; font-family: 'Inter', sans-serif;
+}
+.summary-total-price { font-size: 20px; color: #C9A46A; }
+
+/* ─── DOCUMENT PREVIEW ───────────────────────── */
+.doc-wrapper {
+  background: white; border-radius: 4px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.4); overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+.doc-cover {
+  background: #141210; color: #F0EBE1;
+  min-height: 260px; padding: 50px 48px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.doc-cover .dc-client {
+  font-family: 'Inter', sans-serif; font-size: 22px;
+  letter-spacing: 0.3em; text-transform: uppercase;
+  font-weight: 300; margin-bottom: 28px;
+}
+.doc-cover .dc-quote { font-size: 10px; letter-spacing: 0.2em; color: #C9A46A; text-transform: uppercase; margin-bottom: 6px; }
+.doc-cover .dc-date  { font-size: 10px; letter-spacing: 0.15em; color: #7A7570; text-transform: uppercase; }
+.doc-cover .dc-logo  { font-size: 9px; letter-spacing: 0.28em; color: #C9A46A; text-transform: uppercase; margin-top: 36px; }
+
+.doc-page { padding: 28px 36px; border-top: 1px solid #eee; }
+.doc-page-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding-bottom: 10px; border-bottom: 1px solid #e8e4dc; margin-bottom: 20px;
+}
+.doc-page-header .dph-category { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #555; }
+.doc-page-header .dph-studio   { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: #C9A46A; }
+
+.doc-section-title { font-size: 14px; font-weight: 700; color: #1a1410; margin-bottom: 4px; font-family: 'Inter', sans-serif; }
+.doc-section-sub   { font-size: 11px; color: #777; margin-bottom: 14px; }
+
+.doc-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+.doc-table thead tr { background: #141210; color: #F0EBE1; }
+.doc-table thead th { padding: 8px 10px; text-align: left; font-weight: 400; letter-spacing: 0.07em; text-transform: uppercase; font-size: 9.5px; }
+.doc-table thead th.tc { text-align: center; min-width: 70px; }
+.doc-table tbody tr.sec-head td { background: #F5F2ED; color: #2a2520; font-weight: 600; font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; padding: 6px 10px; border-bottom: 1px solid #e0dbd0; }
+.doc-table tbody tr td { padding: 8px 10px; border-bottom: 1px solid #f0ece4; color: #2a2520; vertical-align: top; }
+.doc-table tbody tr td.tc { text-align: center; }
+.doc-table tbody tr.price-row td { background: #141210; color: #F0EBE1; padding: 10px; text-align: center; font-size: 12px; }
+.doc-table tbody tr.price-row td:first-child { text-align: left; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.doc-kv-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 16px; }
+.doc-kv-table thead tr { background: #141210; color: #F0EBE1; }
+.doc-kv-table thead th { padding: 8px 10px; text-align: left; font-weight: 400; letter-spacing: 0.07em; text-transform: uppercase; font-size: 9.5px; }
+.doc-kv-table tbody td { padding: 9px 10px; border-bottom: 1px solid #f0ece4; color: #2a2520; vertical-align: top; }
+.doc-kv-table tbody tr.kv-price td { background: #141210; color: #C9A46A; padding: 10px; text-align: right; font-size: 13px; }
+.doc-kv-table tbody tr.kv-price td:first-child { text-align: left; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #F0EBE1; }
+
+.doc-scope { margin-bottom: 14px; }
+.doc-scope-title { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #2a2520; margin-bottom: 5px; }
+.doc-scope-text { font-size: 10px; color: #555; line-height: 1.7; }
+
+.doc-payment { background: #141210; color: #F0EBE1; padding: 28px 36px; border-top: 1px solid #2a2520; }
+.dp-label { font-size: 9px; letter-spacing: 0.22em; color: #C9A46A; text-transform: uppercase; margin-bottom: 10px; font-weight: 400; }
+.dp-text  { font-size: 11px; color: #D4CFC7; line-height: 1.9; margin-bottom: 20px; }
+.dp-terms { font-size: 10px; color: #8A8580; line-height: 1.9; }
+
+/* ─── PRINT ──────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; }
+  .print-doc { display: block !important; }
+  .app-layout { display: none !important; }
+}
+@media screen { .print-doc { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+// ──────────────────────────────────────────────────────────────────────────────
+// CATÁLOGO DE SERVICIOS (precios del Excel oficial de Bloom)
+// ──────────────────────────────────────────────────────────────────────────────
+const CATALOG = [
+  {
+    id: 'branding',
+    name: 'Branding / Identidad de Marca',
+    category: 'IDENTIDAD DE MARCA',
+    subtitle: 'Paquetes de identidad de marca',
+    intro: 'En Bloom hemos creado 3 paquetes para que escojas el que mejor se adapta a las necesidades de tu empresa o proyecto:',
+    desc: 'Desarrollo completo de identidad visual, ADN de marca, propuestas gráficas y manual de marca.',
+    type: 'tiers',
+    prices: { oro: 9920000, plata: 6176000, bronce: 3776000 },
+    table: [
+      { section: 'Branding', col: 'Items', rows: [
+        { name: 'ADN de marca', sub: 'Benchmarking - Estudio de mercado',           oro: '✔', plata: '',  bronce: '' },
+        { name: '',            sub: 'Perfil de públicos objetivos',                  oro: '✔', plata: '✔', bronce: '' },
+        { name: '',            sub: 'Valores corporativos',                          oro: '✔', plata: '✔', bronce: '' },
+        { name: '',            sub: 'Manifiesto de marca',                           oro: '✔', plata: '✔', bronce: '' },
+        { name: '',            sub: 'Moodboards - Tablero de inspiración',           oro: '✔', plata: '',  bronce: '✔' },
+        { name: '',            sub: 'Rondas de cambios',                             oro: '2',  plata: '1', bronce: '' },
+      ]},
+      { section: '', col: '', rows: [
+        { name: 'Identidad Verbal', sub: 'Voz y Tono',          oro: '✔', plata: '✔', bronce: '' },
+        { name: '',                 sub: 'Audiencias',          oro: '✔', plata: '',  bronce: '' },
+        { name: '',                 sub: 'Canales',             oro: '✔', plata: '',  bronce: '' },
+        { name: '',                 sub: 'Rondas de cambios',   oro: '3',  plata: '1', bronce: '' },
+      ]},
+      { section: '', col: '', rows: [
+        { name: 'Propuestas gráficas', sub: 'Bocetación y conceptualización',    oro: '4',  plata: '3', bronce: '2' },
+        { name: '',                    sub: 'Propuestas terminadas a color',      oro: '2',  plata: '1', bronce: '1' },
+        { name: '',                    sub: 'Rondas de cambios',                  oro: '3',  plata: '2', bronce: '2' },
+      ]},
+      { section: '', col: '', rows: [
+        { name: 'Universo de marca', sub: 'Ilustraciones Personalizadas (1 alta, 3 media o 5 baja)',    oro: '✔', plata: '✔', bronce: '' },
+        { name: '',                  sub: 'Rondas de cambios ilustraciones',                            oro: '3',  plata: '3', bronce: '' },
+        { name: '',                  sub: 'Recursos de stock adaptados (5 iconos o 3 texturas)',        oro: '',  plata: '',  bronce: '✔' },
+        { name: '',                  sub: 'Lineamientos fotográficos',                                  oro: '✔', plata: '',  bronce: '' },
+      ]},
+      { section: '', col: '', rows: [
+        { name: 'Manual de marca', sub: 'Paleta de color principal',           oro: '✔', plata: '✔', bronce: '✔' },
+        { name: '',                sub: 'Paleta de color secundaria',          oro: '✔', plata: '✔', bronce: '' },
+        { name: '',                sub: 'Tipografías del logo',                oro: '✔', plata: '✔', bronce: '✔' },
+        { name: '',                sub: 'Tipografías de la marca',             oro: '✔', plata: '✔', bronce: '✔' },
+        { name: '',                sub: 'Composición del logo',               oro: '✔', plata: '✔', bronce: '✔' },
+        { name: '',                sub: 'Usos incorrectos',                    oro: '✔', plata: '',  bronce: '' },
+        { name: '',                sub: 'Escalabilidad',                       oro: '✔', plata: '',  bronce: '' },
+        { name: '',                sub: 'Márgenes de distancia',               oro: '✔', plata: '',  bronce: '' },
+        { name: '',                sub: 'Mockup - Ejemplos de composiciones',  oro: '4',  plata: '3', bronce: '2' },
+      ]},
+      { section: '', col: '', rows: [
+        { name: 'Entregables', sub: 'Logo CMYK y RGB - Editable, JPG y PNG',              oro: '✔', plata: '✔', bronce: '✔' },
+        { name: '',            sub: 'Manual de marca PDF',                                 oro: '✔', plata: '✔', bronce: '✔' },
+        { name: '',            sub: 'Ilustraciones Personalizadas (Editable, PNG)',        oro: '✔', plata: '✔', bronce: '' },
+        { name: '',            sub: 'Recursos (texturas, iconos)',                         oro: '',  plata: '',  bronce: '✔' },
+        { name: '',            sub: 'Guía para uso de archivos en PDF',                   oro: '',  plata: '',  bronce: '✔' },
+        { name: '',            sub: 'Video explicativo de uso de marca',                   oro: '✔', plata: '✔', bronce: '' },
+      ]},
+    ],
+    notes: '*En caso de requerir rondas de cambios o propuestas de diseño/naming no incluidas en el paquete, estás tendrán un valor adicional.\n*Los paquetes se pueden armar de acuerdo a las necesidades',
+    payment: '40% inicio · 30% logo aprobado · 30% archivos finales',
+    paymentDetail: 'Pago del 40% al iniciar el proyecto.\nPago del 30% una vez se escoja el logo final.\nPago del 30% para enviar paquete de archivos finales.',
+  },
+  {
+    id: 'packaging_caja',
+    name: 'Packaging — Empaque / Caja',
+    category: 'DISEÑO DE EMPAQUE',
+    subtitle: 'Packaging · Empaque - Caja',
+    intro: '',
+    desc: 'Diseño gráfico sobre troquel existente. Incluye look & feel, diagramación y rondas de cambios.',
+    type: 'tiers',
+    prices: { oro: 1920000, plata: 1520000, bronce: 1200000 },
+    table: [
+      { section: 'EMPAQUE', col: 'Descripción', rows: [
+        { name: 'Look and feel',
+          sub:  'Adaptación de la identidad visual de la marca al empaque, definiendo composición, estilo y acabados para garantizar una presentación coherente, atractiva y alineada con el producto.',
+          oro: '✔', plata: '✔', bronce: '✔' },
+        { name: 'Diseño y diagramación',
+          sub: '- Diseño y diagramación de packaging, definiendo composición, distribución de elementos y jerarquía de la información.\n- Refinamiento de detalles y preparación de archivos para impresión.\n- Dependiendo de la dificultad, el valor varía entre oro, plata y bronce.',
+          oro: 'Dificultad Alta', plata: 'Dificultad Media', bronce: 'Dificultad Baja' },
+        { name: 'Rondas de cambios\nsobre la ilustración', sub: 'Ajustes de diagramación, tamaño, color, ubicación y texto.', oro: '3', plata: '2', bronce: '2' },
+        { name: 'Rondas de cambios\ndiagramación y textos', sub: 'Ajustes de diagramación, tamaño, color, ubicación y texto.',  oro: '3', plata: '3', bronce: '3' },
+      ]},
+    ],
+    note: 'En esta cotización, el empaque se basa en el diseño gráfico sobre un troquel existente. Si se requiere el diseño 3D de la caja y la creación de un nuevo troquel, se debe realizar una nueva cotización.',
+    scope: '- Desarrollo del diseño gráfico\n- Propuesta de diseño basada en la identidad de marca del cliente.\n- Entrega de archivos listos para impresión en los formatos necesarios\n- En caso de requerir rondas de cambios o propuestas no incluidas en el paquete, estas tendrán un valor adicional.',
+    inputs: 'El cliente proporcionará los textos finales con ortografía revisada.\nEl cliente entregará toda la información necesaria sobre los productos para asegurar una ejecución precisa del diseño.\nEl proveedor facilitará las medidas y el troquel para la producción de la caja.',
+    addl:  'Alineación con el impresor: revisión de requerimientos y estándares de calidad (acabados y detalles). Revisión de pruebas de impresión. Valor por hora $100.000',
+    payment: '50% inicio · 50% archivos finales',
+    paymentDetail: 'Pago del 50% al iniciar el proyecto.\nPago del 50% para enviar paquete de archivos finales.',
+  },
+  {
+    id: 'etiquetas',
+    name: 'Packaging — Etiquetas',
+    category: 'DISEÑO DE EMPAQUE',
+    subtitle: 'Packaging · Etiqueta - Personalizar productos',
+    intro: '',
+    desc: 'Diseño de etiquetas para personalizar productos. Incluye look & feel, diagramación y rondas de cambios.',
+    type: 'tiers',
+    prices: { oro: 1120000, plata: 800000, bronce: 480000 },
+    table: [
+      { section: 'ETIQUETAS', col: 'Descripción', rows: [
+        { name: 'Look and feel',
+          sub: 'Adaptación de la identidad visual de la marca al empaque, definiendo composición, estilo y acabados para garantizar una presentación coherente, atractiva y alineada con el producto.',
+          oro: '✔', plata: '✔', bronce: '✔' },
+        { name: 'Diseño y diagramación',
+          sub: '- Diseño y diagramación de packaging, definiendo composición, distribución de elementos y jerarquía de la información.\n- Refinamiento de detalles y preparación de archivos para impresión.\n- Dependiendo de la dificultad, el valor varía entre oro, plata y bronce.',
+          oro: 'Dificultad Media', plata: 'Dificultad Baja', bronce: 'Sin Ilustración' },
+        { name: 'Rondas de cambios\nsobre la ilustración', sub: 'Ajustes de diagramación, tamaño, color, ubicación y texto.', oro: '2', plata: '2', bronce: 'NA' },
+        { name: 'Rondas de cambios\ndiagramación y textos', sub: 'Ajustes de diagramación, tamaño, color, ubicación y texto.', oro: '2', plata: '2', bronce: '2' },
+      ]},
+    ],
+    scope: '- Desarrollo del diseño gráfico\n- Propuesta de diseño basada en la identidad de marca del cliente.\n- Entrega de archivos listos para impresión en los formatos necesarios\n- En caso de requerir rondas adicionales, estas tendrán un valor adicional.',
+    inputs: 'El cliente proporcionará los textos finales con ortografía revisada.\nEl cliente entregará toda la información necesaria sobre los productos.\nEl proveedor facilitará las medidas del troquel para la producción de la etiqueta.',
+    addl:  'Alineación con el impresor: revisión de requerimientos y estándares de calidad. Revisión de pruebas de impresión. Valor por hora $100.000',
+    payment: '50% inicio · 50% archivos finales',
+    paymentDetail: 'Pago del 50% al iniciar el proyecto.\nPago del 50% para enviar paquete de archivos finales.',
+  },
+  {
+    id: 'key_visual',
+    name: 'Key Visual',
+    category: 'DISEÑO DE EMPAQUE',
+    subtitle: 'Key Visual',
+    intro: '',
+    desc: 'Identidad visual única para un evento o campaña. Elección de paleta de color, tipografías e ilustraciones.',
+    type: 'tiers',
+    prices: { oro: 4181333, plata: 2821333, bronce: 1941333 },
+    table: [
+      { section: 'KEY VISUAL', col: 'Descripción', rows: [
+        { name: 'Look and feel', sub: 'Elección de paleta de color, tipografías y estilo gráfico del evento. Incluye dos rondas de cambios.', oro: '✔', plata: '✔', bronce: '✔' },
+        { name: 'Ilustraciones', sub: 'Creación de ilustraciones personalizadas para el evento o campaña.', oro: '5 (media)', plata: '3 (media)', bronce: '3 (baja)' },
+        { name: 'Aplicación del key visual', sub: 'Aplicación en formato póster y adaptaciones.', oro: '2 formatos', plata: '2 formatos', bronce: '1 formato' },
+        { name: 'Rondas de cambios', sub: '', oro: '3', plata: '2', bronce: '2' },
+      ]},
+    ],
+    scope: '- Desarrollo de identidad visual del evento.\n- Entrega de archivos editables y listos para uso digital e impresión.\n- En caso de requerir rondas adicionales, estas tendrán un valor adicional.',
+    inputs: 'El cliente proporcionará los textos finales con ortografía revisada.\nEl cliente entregará toda la información necesaria sobre el evento para asegurar una ejecución precisa del diseño.\nEl proveedor facilitará las medidas de los formatos que desea trabajar.',
+    payment: '50% inicio · 50% archivos finales',
+    paymentDetail: 'Pago del 50% al iniciar el proyecto.\nPago del 50% para enviar paquete de archivos finales.',
+  },
+  {
+    id: 'naming',
+    name: 'Naming',
+    category: 'IDENTIDAD DE MARCA',
+    subtitle: 'Naming',
+    intro: '',
+    desc: 'Creación del nombre para una marca, empresa o proyecto.',
+    type: 'tiers',
+    prices: { oro: 2106667, plata: 1466667, bronce: 986667 },
+    table: [
+      { section: 'NAMING', col: 'Propuestas', rows: [
+        { name: 'Primera ronda: Propuestas de naming', sub: '',  oro: '8', plata: '5', bronce: '3' },
+        { name: 'Segunda ronda: Propuestas de naming', sub: '',  oro: '4', plata: '3', bronce: '2' },
+        { name: 'Investigación de disponibilidad',     sub: 'Revisión básica de disponibilidad en redes y dominio', oro: '✔', plata: '✔', bronce: '✔' },
+      ]},
+    ],
+    payment: '50% inicio · 50% archivos finales',
+    paymentDetail: 'Pago del 50% al iniciar el proyecto.\nPago del 50% al enviar informe final.',
+  },
+  {
+    id: 'ilustracion',
+    name: 'Ilustración',
+    category: 'DISEÑO',
+    subtitle: 'Ilustración',
+    intro: '',
+    desc: 'Creación de ilustraciones personalizadas en diferentes niveles de dificultad.',
+    type: 'difficulty',
+    prices: { alta: 1200000, media: 800000, baja: 320000 },
+    priceLabels: { alta: 'Alta', media: 'Media', baja: 'Baja' },
+    payment: '50% inicio · 50% archivos finales',
+    paymentDetail: 'Pago del 50% al iniciar el proyecto.\nPago del 50% al enviar los archivos finales.',
+  },
+  {
+    id: 'editorial',
+    name: 'Editorial',
+    category: 'DISEÑO',
+    subtitle: 'Editorial',
+    intro: '',
+    desc: 'Diseño editorial para presentaciones, informes, catálogos y materiales impresos.',
+    type: 'tiers',
+    prices: { oro: 2160000, plata: 1544000, bronce: null },
+    table: [
+      { section: 'EDITORIAL', col: 'Descripción', rows: [
+        { name: 'Diseño de plantilla base', sub: 'Definición de grilla, tipografías, paleta de color y estilo visual.', oro: '✔', plata: '✔', bronce: '' },
+        { name: 'Diagramación de páginas', sub: 'Número de páginas incluidas en el paquete.', oro: '20 pág', plata: '12 pág', bronce: '' },
+        { name: 'Rondas de cambios', sub: '', oro: '3', plata: '2', bronce: '' },
+        { name: 'Entregables', sub: 'Archivos PDF e InDesign editables.', oro: '✔', plata: '✔', bronce: '' },
+      ]},
+    ],
+    payment: '50% inicio · 50% archivos finales',
+    paymentDetail: 'Pago del 50% al iniciar el proyecto.\nPago del 50% al enviar los archivos finales.',
+  },
+  {
+    id: 'adn_marca',
+    name: 'ADN de Marca',
+    category: 'IDENTIDAD DE MARCA',
+    subtitle: 'ADN de Marca',
+    intro: '',
+    desc: 'Investigación y definición del ADN de marca: benchmarking, públicos, valores y manifiesto.',
+    type: 'tiers',
+    prices: { oro: 3600000, plata: 2240000, bronce: 640000 },
+    table: [
+      { section: 'ADN DE MARCA', col: 'Descripción', rows: [
+        { name: 'Benchmarking - Estudio de mercado',    sub: '', oro: '✔', plata: '✔', bronce: '' },
+        { name: 'Perfil de públicos objetivos',         sub: '', oro: '✔', plata: '✔', bronce: '✔' },
+        { name: 'Valores corporativos',                 sub: '', oro: '✔', plata: '✔', bronce: '✔' },
+        { name: 'Manifiesto de marca',                  sub: '', oro: '✔', plata: '✔', bronce: '' },
+        { name: 'Moodboards - Tablero de inspiración',  sub: '', oro: '✔', plata: '✔', bronce: '' },
+        { name: 'Rondas de cambios',                    sub: '', oro: '2',  plata: '1', bronce: '1' },
+      ]},
+    ],
+    payment: '50% inicio · 50% archivos finales',
+    paymentDetail: 'Pago del 50% al iniciar el proyecto.\nPago del 50% al entregar el informe final.',
+  },
+];
+
+// ──────────────────────────────────────────────────────────────────────────────
+// UTILIDADES
+// ──────────────────────────────────────────────────────────────────────────────
+const getToday = () => {
+  const d = new Date();
+  const months = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO',
+                  'JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  return `${String(d.getDate()).padStart(2,'0')} DE ${months[d.getMonth()]} DE ${d.getFullYear()}`;
+};
+
+const fmtCOP = (n) => {
+  if (!n && n !== 0) return '—';
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency', currency: 'COP', minimumFractionDigits: 0
+  }).format(Math.round(n));
+};
+
+const fmtCOPShort = (n) => {
+  if (!n && n !== 0) return '—';
+  return '$' + new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0 }).format(Math.round(n));
+};
+
+const TIER_LABELS = { oro: 'ORO', plata: 'PLATA', bronce: 'BRONCE', alta: 'ALTA', media: 'MEDIA', baja: 'BAJA' };
+
+// ── Número de cotización ──────────────────────────────────────────────────────
+const QUOTE_COUNTER_KEY = 'bloom_quote_counter';
+const MONTHS_MAP = {
+  'ENERO':'01','FEBRERO':'02','MARZO':'03','ABRIL':'04','MAYO':'05','JUNIO':'06',
+  'JULIO':'07','AGOSTO':'08','SEPTIEMBRE':'09','OCTUBRE':'10','NOVIEMBRE':'11','DICIEMBRE':'12'
+};
+const genQuoteNumber = (clientName, dateStr) => {
+  const counter = parseInt(localStorage.getItem(QUOTE_COUNTER_KEY) || '0') + 1;
+  localStorage.setItem(QUOTE_COUNTER_KEY, String(counter));
+  // Nombre: sin tildes, sin espacios, max 12 chars
+  const name = (clientName || 'CLIENTE')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '').substring(0, 12).toUpperCase();
+  // Fecha DDMMYY desde "17 DE ABRIL DE 2026"
+  const parts = (dateStr || '').toUpperCase().split(' DE ');
+  const dd = (parts[0] || '01').padStart(2, '0');
+  const mm = MONTHS_MAP[parts[1]] || '01';
+  const yy = (parts[2] || new Date().getFullYear().toString()).slice(-2);
+  return `${name}_${dd}${mm}${yy}_${String(counter).padStart(3,'0')}`;
+};
+
+// ── Helpers para ajuste de cantidades ─────────────────────────────────────────
+const isNum = v => v !== '' && v !== null && v !== undefined &&
+  !isNaN(parseFloat(String(v))) && String(v).trim() !== '' &&
+  String(v).trim() !== '✔' && String(v).trim() !== 'NA';
+
+const rowDelta = (row, tier) => {
+  const origKey = 'orig' + tier.charAt(0).toUpperCase() + tier.slice(1); // origOro, origPlata, origBronce
+  if (!isNum(row[tier]) || !isNum(row[origKey])) return 0;
+  return (parseFloat(row[tier]) - parseFloat(row[origKey])) * (row.unitPrice || 0);
+};
+
+const calcTierAdds = (tableRows) => {
+  const rows = (tableRows || []).filter(r => !r.deleted);
+  return {
+    oro:    rows.reduce((s,r) => s + (r.isCustom ? (r.oroPrice||0)    : rowDelta(r,'oro')),    0),
+    plata:  rows.reduce((s,r) => s + (r.isCustom ? (r.plataPrice||0)  : rowDelta(r,'plata')),  0),
+    bronce: rows.reduce((s,r) => s + (r.isCustom ? (r.broncePrice||0) : rowDelta(r,'bronce')), 0),
+  };
+};
+
+// ──────────────────────────────────────────────────────────────────────────────
+// COMPONENTES DEL DOCUMENTO (Preview)
+// ──────────────────────────────────────────────────────────────────────────────
+const TERMS = `- Validez de la oferta: 20 días.
+- Moneda: Pesos Colombianos.
+- El cronograma acordado con el cliente empezará a correr a partir de la fecha del pago del 1er anticipo.
+- Cada etapa del proyecto debe ser aprobada por medio de correo electrónico.
+- Los valores en esta cotización están sujetos a variaciones si los requerimientos llegaran a cambiar.
+- Cada corrección sobre etapa aprobada conlleva a costos adicionales equivalentes al 20% del total del proyecto.
+- El tiempo de respuesta por parte del cliente y Bloom Design Studio no debe superar una (1) semana calendario. En caso de que el cliente no dé respuesta en término de cuatro (4) semanas calendario deberá pagar la totalidad del saldo pendiente del proyecto.
+- El cliente no tiene derecho sobre ningún diseño, idea creativa o material hasta que se haga la transacción comercial final.
+- El cliente solo se llevará una de las propuestas realizadas. Todas las propuestas enviadas y no aprobadas quedarán a disposición de Bloom Design Studio.
+- Esta propuesta es estrictamente confidencial y las ideas, información, y procesos no deberán ser compartidos con externos.
+- El cliente podrá cancelar máximo en las 2 siguientes semanas después de haber realizado el 1er anticipo alguno de los servicios contratados que no hayan iniciado.
+- Una vez realizado el primer pago correspondiente a esta cotización, el cliente da por entendido y aceptados todos los términos y condiciones.`;
+
+function DocCover({ clientName, date, services }) {
+  const category = services.length > 0
+    ? CATALOG.find(c => c.id === services[0].id)?.category || 'SERVICIOS DE DISEÑO'
+    : 'SERVICIOS DE DISEÑO';
+  return (
+    <div className="doc-cover">
+      <div className="dc-client">{clientName || 'NOMBRE DEL CLIENTE'}</div>
+      <div className="dc-quote">Cotización Servicios de Diseño</div>
+      <div className="dc-date">{date || getToday()}</div>
+      <div className="dc-logo">Bloom Design Studio</div>
+    </div>
+  );
+}
+
+function DocServicePage({ svcConfig }) {
+  const def = CATALOG.find(c => c.id === svcConfig.id);
+  if (!def) return null;
+
+  const showTiers = svcConfig.showTiers || { oro: true, plata: true, bronce: true };
+  const visTiers  = ['oro','plata','bronce'].filter(t => showTiers[t]);
+  const diffKey   = svcConfig.difficulty || 'media';
+  const price     = def.type === 'difficulty' ? def.prices[diffKey] : def.prices['plata'];
+
+  return (
+    <div className="doc-page">
+      <div className="doc-page-header">
+        <span className="dph-category">{def.category}</span>
+        <span className="dph-studio">B L O O M  D E S I G N  S T U D I O</span>
+      </div>
+
+      <div className="doc-section-title">{def.subtitle}</div>
+      {def.intro && <div className="doc-section-sub">{def.intro}</div>}
+      {svcConfig.note && (
+        <div style={{fontSize:11,color:'#555',marginBottom:10,fontStyle:'italic'}}>{svcConfig.note}</div>
+      )}
+
+      {/* TIER TABLE — muestra solo los tiers seleccionados */}
+      {def.type === 'tiers' && (() => {
+        const activeRows = (svcConfig.tableRows||[]).filter(r => !r.deleted);
+        const tierAddsDoc = calcTierAdds(svcConfig.tableRows);
+        const nCols = 2 + visTiers.length;
+        return (
+        <table className="doc-table">
+          <thead>
+            <tr>
+              <th>{def.table?.[0]?.section || def.subtitle}</th>
+              <th>{def.table?.[0]?.col || 'Descripción'}</th>
+              {visTiers.includes('oro')    && <th className="tc">ORO</th>}
+              {visTiers.includes('plata')  && <th className="tc">PLATA</th>}
+              {visTiers.includes('bronce') && <th className="tc">BRONCE</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {activeRows.map(row => (
+              <React.Fragment key={row._id}>
+                {row.sectionHeader && (
+                  <tr>
+                    <td colSpan={nCols} style={{background:'#F5F2ED',fontWeight:600,fontSize:9,textTransform:'uppercase',letterSpacing:'0.05em',padding:'6px 10px',borderBottom:'1px solid #e0dbd0'}}>{row.sectionHeader}</td>
+                  </tr>
+                )}
+                <tr style={row.isCustom ? {background:'#FAFAF7'} : {}}>
+                  <td style={{fontWeight: row.name ? 500 : 400, whiteSpace:'pre-line', color: row.isCustom ? '#5A4010' : undefined}}>{row.name}</td>
+                  <td style={{color: row.isCustom ? '#777' : '#555', whiteSpace:'pre-line', fontSize:10}}>{row.sub}</td>
+                  {visTiers.includes('oro')    && <td className="tc" style={row.isCustom && row.oroPrice ? {color:'#5A4010'} : {}}>{row.isCustom && row.oroPrice ? fmtCOPShort(row.oroPrice) : row.oro}</td>}
+                  {visTiers.includes('plata')  && <td className="tc" style={row.isCustom && row.plataPrice ? {color:'#5A4010'} : {}}>{row.isCustom && row.plataPrice ? fmtCOPShort(row.plataPrice) : row.plata}</td>}
+                  {visTiers.includes('bronce') && <td className="tc" style={row.isCustom && row.broncePrice ? {color:'#5A4010'} : {}}>{row.isCustom && row.broncePrice ? fmtCOPShort(row.broncePrice) : row.bronce}</td>}
+                </tr>
+              </React.Fragment>
+            ))}
+            <tr className="price-row">
+              <td colSpan={2}>Propuesta Económica</td>
+              {visTiers.includes('oro')    && <td>{fmtCOPShort((def.prices.oro||0) + tierAddsDoc.oro)}</td>}
+              {visTiers.includes('plata')  && <td>{fmtCOPShort((def.prices.plata||0) + tierAddsDoc.plata)}</td>}
+              {visTiers.includes('bronce') && <td>{def.prices.bronce ? fmtCOPShort(def.prices.bronce + tierAddsDoc.bronce) : '—'}</td>}
+            </tr>
+          </tbody>
+        </table>
+        );
+      })()}
+
+      {/* DIFFICULTY TABLE (for Ilustración) */}
+      {def.type === 'difficulty' && (
+        <table className="doc-kv-table">
+          <thead>
+            <tr>
+              <th>Nivel</th>
+              <th>Descripción</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Alta</td><td>Diseños de gran formato, desarrollo desde cero de una estética o ilustraciones complejas.</td><td>{fmtCOPShort(def.prices.alta)}</td></tr>
+            <tr><td>Media</td><td>Piezas editoriales, ilustraciones de complejidad media, creación de plantillas digitales.</td><td>{fmtCOPShort(def.prices.media)}</td></tr>
+            <tr><td>Baja</td><td>Piezas para redes sociales, adaptaciones, stickers, tarjetas sencillas.</td><td>{fmtCOPShort(def.prices.baja)}</td></tr>
+            <tr className="kv-price">
+              <td colSpan={2}>
+                Propuesta Económica ({svcConfig.qty||1} ilustración{(svcConfig.qty||1)>1?'es':''} — nivel {TIER_LABELS[diffKey]})
+              </td>
+              <td>{fmtCOPShort((def.prices[diffKey]||0) * (svcConfig.qty||1))}</td>
+            </tr>
+          </tbody>
+        </table>
+      )}
+
+      {/* Nota especial */}
+      {def.note && (
+        <p style={{fontSize:10,color:'#555',marginBottom:14,fontStyle:'italic',borderLeft:'2px solid #C9A46A',paddingLeft:10}}>{def.note}</p>
+      )}
+
+      {/* Alcance / Insumos / Servicios adicionales */}
+      {def.scope && (
+        <div className="doc-scope">
+          <div className="doc-scope-title">Alcance del servicio</div>
+          <div className="doc-scope-text" style={{whiteSpace:'pre-line'}}>{def.scope}</div>
+        </div>
+      )}
+      {def.inputs && (
+        <div className="doc-scope">
+          <div className="doc-scope-title">Insumos</div>
+          <div className="doc-scope-text" style={{whiteSpace:'pre-line'}}>{def.inputs}</div>
+        </div>
+      )}
+      {def.addl && (
+        <div className="doc-scope">
+          <div className="doc-scope-title">Servicios adicionales</div>
+          <div className="doc-scope-text">{def.addl}</div>
+        </div>
+      )}
+      {def.notes && (
+        <div className="doc-scope">
+          <div className="doc-scope-text" style={{whiteSpace:'pre-line',color:'#777'}}>{def.notes}</div>
+        </div>
+      )}
+
+      {/* Nota personalizada */}
+      {svcConfig.customNote && (
+        <div className="doc-scope">
+          <div className="doc-scope-title">Notas adicionales</div>
+          <div className="doc-scope-text">{svcConfig.customNote}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DocPaymentPage({ services }) {
+  const def0 = services.length > 0 ? CATALOG.find(c => c.id === services[0].id) : null;
+  const paymentDetail = def0?.paymentDetail || 'Pago del 50% al iniciar el proyecto.\nPago del 50% para enviar paquete de archivos finales.';
+
+  return (
+    <div className="doc-payment">
+      <div style={{fontSize:9,letterSpacing:'0.28em',color:'#C9A46A',textTransform:'uppercase',marginBottom:36,fontFamily:"'Inter',sans-serif"}}>
+        Bloom Design Studio
+      </div>
+
+      <div style={{marginBottom:32}}>
+        <div className="dp-label">Datos para la consignación</div>
+        <div className="dp-text" style={{whiteSpace:'pre-line'}}>{paymentDetail}</div>
+        <div className="dp-text">
+          Transferencia Bancaria<br/>
+          DANIELA GÓMEZ SAA - CC: 1144070977<br/>
+          Bancolombia — Cuenta de Ahorros No. 825 00000 633
+        </div>
+      </div>
+
+      <div>
+        <div className="dp-label">Términos y condiciones</div>
+        <div className="dp-terms" style={{whiteSpace:'pre-line'}}>{TERMS}</div>
+      </div>
+    </div>
+  );
+}
+
+function DocumentPreview({ clientName, date, services }) {
+  // solo para compatibilidad (no se usa directamente ahora)
+  const total = 0;
+
+  return (
+    <div className="doc-wrapper">
+      <DocCover clientName={clientName} date={date} services={services} />
+      {services.map((s, i) => <DocServicePage key={i} svcConfig={s} />)}
+      {services.length > 0 && <DocPaymentPage services={services} />}
+      {services.length === 0 && (
+        <div style={{padding:'40px 36px',textAlign:'center',color:'#999',fontSize:13}}>
+          Agrega servicios en el paso 2 para ver la cotización aquí.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// PASOS DEL FORMULARIO
+// ──────────────────────────────────────────────────────────────────────────────
+function Step1Client({ clientName, setClientName, date, setDate, elaboradoPor, setElaboradoPor, onNext }) {
+  return (
+    <div>
+      <div className="step-label">Paso 1 de 3</div>
+      <h2 className="form-title">¿A quién le vas a cotizar?</h2>
+      <p className="form-sub">Ingresa la información del cliente para la portada de la propuesta.</p>
+
+      <div className="field">
+        <label>Nombre del cliente o empresa</label>
+        <input
+          type="text"
+          placeholder="Ej: Anuditos / TEDxCali / Empresa XYZ"
+          value={clientName}
+          onChange={e => setClientName(e.target.value.toUpperCase())}
+        />
+      </div>
+
+      <div className="field">
+        <label>Fecha de la cotización</label>
+        <input
+          type="text"
+          placeholder="Ej: 13 DE ABRIL DE 2026"
+          value={date}
+          onChange={e => setDate(e.target.value.toUpperCase())}
+        />
+      </div>
+
+      <div className="field">
+        <label>Elaborado por</label>
+        <input
+          type="text"
+          placeholder="Ej: Fernanda / Daniela"
+          value={elaboradoPor}
+          onChange={e => setElaboradoPor(e.target.value)}
+        />
+      </div>
+
+      <div className="btn-row">
+        <button className="btn-gold" onClick={onNext} disabled={!clientName.trim()}>
+          Continuar →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Step2Services({ services, setServices, onBack, onNext }) {
+  const mkEntry = (id) => {
+    const def = CATALOG.find(c => c.id === id);
+    const isDiff = def?.type === 'difficulty';
+    let tableRows = [];
+    let nextId = 0;
+    if (!isDiff && def?.table) {
+      def.table.forEach((group, gi) => {
+        group.rows.forEach((row, ri) => {
+          const oroVal    = String(row.oro    != null ? row.oro    : '');
+          const plataVal  = String(row.plata  != null ? row.plata  : '');
+          const bronceVal = String(row.bronce != null ? row.bronce : '');
+          tableRows.push({
+            _id: nextId++,
+            sectionHeader: (gi > 0 && ri === 0) ? (group.section || '') : '',
+            name: row.name || '',
+            sub: row.sub || '',
+            oro:    oroVal,
+            plata:  plataVal,
+            bronce: bronceVal,
+            origOro:    oroVal,   // valores originales del catálogo (para calcular delta)
+            origPlata:  plataVal,
+            origBronce: bronceVal,
+            unitPrice: 100000,    // tarifa por unidad (COP) — editable por el usuario
+            isCustom: false, deleted: false,
+            oroPrice: 0, plataPrice: 0, broncePrice: 0
+          });
+        });
+      });
+    }
+    return {
+      id,
+      showTiers: isDiff ? null : { oro: true, plata: true, bronce: true },
+      difficulty: 'media',
+      qty: 1, customNote: '', extras: [],
+      tableRows, _nextId: nextId
+    };
+  };
+
+  const toggle = (id) => {
+    setServices(prev => {
+      const exists = prev.find(s => s.id === id);
+      if (exists) return prev.filter(s => s.id !== id);
+      return [...prev, mkEntry(id)];
+    });
+  };
+
+  const selectAll  = () => setServices(CATALOG.map(c => mkEntry(c.id)));
+  const selectNone = () => setServices([]);
+
+  return (
+    <div>
+      <div className="step-label">Paso 2 de 3</div>
+      <h2 className="form-title">¿Qué servicios incluir?</h2>
+      <p className="form-sub">Selecciona uno o más servicios de forma individual, o usa los botones para seleccionar todos de una vez.</p>
+
+      <div className="btn-row" style={{marginBottom:16,marginTop:0}}>
+        <button className="btn-dark" style={{flex:1}} onClick={selectAll}>Seleccionar todos</button>
+        <button className="btn-dark" style={{flex:1}} onClick={selectNone}>Ninguno</button>
+      </div>
+
+      <div className="service-grid">
+        {CATALOG.map(svc => {
+          const selected = !!services.find(s => s.id === svc.id);
+          return (
+            <div key={svc.id} className={`service-card ${selected ? 'selected' : ''}`} onClick={() => toggle(svc.id)}>
+              <div className="service-card-header">
+                <div>
+                  <div className="service-card-name">{svc.name}</div>
+                  <div className="service-card-desc">{svc.desc}</div>
+                </div>
+                <div className="service-check">
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 3.5L4 6.5L9 1" stroke="#0F0D0B" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="btn-row">
+        <button className="btn-dark" onClick={onBack}>← Atrás</button>
+        <button className="btn-gold" onClick={onNext} disabled={services.length === 0}>
+          Configurar detalles →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Step3Config({ services, setServices, onBack, onGenerate }) {
+  const [expandedEditors, setExpandedEditors] = useState({});
+  const toggleEditor = (id) => setExpandedEditors(prev => ({...prev, [id]: !prev[id]}));
+
+  const update = (id, key, val) => {
+    setServices(prev => prev.map(s => s.id === id ? { ...s, [key]: val } : s));
+  };
+
+  const addTableRow = (id) => {
+    setServices(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const newRow = {
+        _id: s._nextId || 0,
+        sectionHeader: '', name: '', sub: '',
+        oro: '', plata: '', bronce: '',
+        isCustom: true, deleted: false,
+        oroPrice: 0, plataPrice: 0, broncePrice: 0
+      };
+      return { ...s, tableRows: [...(s.tableRows||[]), newRow], _nextId: (s._nextId||0)+1 };
+    }));
+  };
+  const removeTableRow = (id, rowId) => {
+    setServices(prev => prev.map(s =>
+      s.id !== id ? s : { ...s, tableRows: (s.tableRows||[]).map(r => r._id === rowId ? {...r, deleted: true} : r) }
+    ));
+  };
+  const updateTableRow = (id, rowId, key, val) => {
+    setServices(prev => prev.map(s =>
+      s.id !== id ? s : { ...s, tableRows: (s.tableRows||[]).map(r => r._id === rowId ? {...r, [key]: val} : r) }
+    ));
+  };
+
+  const getTierAdds = (svc) => calcTierAdds(svc.tableRows);
+
+  const toggleTier = (id, tierKey) => {
+    setServices(prev => prev.map(s => {
+      if (s.id !== id) return s;
+      const curr = s.showTiers || { oro: true, plata: true, bronce: true };
+      const next = { ...curr, [tierKey]: !curr[tierKey] };
+      // No permitir dejar todos en false
+      if (!Object.values(next).some(Boolean)) return s;
+      return { ...s, showTiers: next };
+    }));
+  };
+
+  return (
+    <div>
+      <div className="step-label">Paso 3 de 3</div>
+      <h2 className="form-title">Ajusta cada servicio</h2>
+      <p className="form-sub">Activa los paquetes que quieres mostrarle al cliente (los 3 por defecto), agrega extras y notas.</p>
+
+      {services.map(svc => {
+        const def = CATALOG.find(c => c.id === svc.id);
+        if (!def) return null;
+        const isDiff = def.type === 'difficulty';
+        const tierAdds = getTierAdds(svc);
+        const showTiers = svc.showTiers || { oro: true, plata: true, bronce: true };
+
+        return (
+          <div key={svc.id} className="config-block">
+            <div className="config-block-title">{def.name}</div>
+
+            {/* ── TIERS (checkboxes multi-select) ── */}
+            {!isDiff && (
+              <>
+                <div className="config-block-sub">
+                  Selecciona los paquetes a mostrar simultáneamente en el documento
+                </div>
+                <div className="tier-row">
+                  {[['oro','ORO'], ['plata','PLATA'], ['bronce','BRONCE']].map(([key, label]) => {
+                    const price = def.prices[key];
+                    const active = showTiers[key] !== false;
+                    return (
+                      <div key={key}
+                        className={`tier-btn ${active ? `active-${key}` : ''}`}
+                        onClick={() => toggleTier(svc.id, key)}
+                        style={{position:'relative', cursor:'pointer'}}>
+                        {/* Ícono check / uncheck */}
+                        <div style={{
+                          position:'absolute', top:6, right:6,
+                          width:14, height:14, borderRadius:3,
+                          border: active ? 'none' : '1.5px solid #4A4540',
+                          background: active ? (key==='oro'?'#C9A46A':key==='plata'?'#A0A8B0':'#C08060') : 'transparent',
+                          display:'flex', alignItems:'center', justifyContent:'center'
+                        }}>
+                          {active && <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                            <path d="M1 3L3 5L7 1" stroke="#0F0D0B" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>}
+                        </div>
+                        <div className="tier-name" style={{marginRight:8}}>{label}</div>
+                        <div className="tier-price">{price ? fmtCOPShort(price + (tierAdds[key]||0)) : '—'}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{fontSize:11,color:'#6A6560',fontFamily:"'Inter',sans-serif",marginBottom:12,marginTop:-6}}>
+                  ✔ seleccionado = visible en el documento. El cliente ve todos los precios simultáneamente.
+                </div>
+              </>
+            )}
+
+            {/* ── DIFICULTAD (para Ilustración — radio) ── */}
+            {isDiff && (
+              <>
+                <div className="config-block-sub">Selecciona el nivel de dificultad</div>
+                <div className="tier-row">
+                  {[['alta','ALTA'], ['media','MEDIA'], ['baja','BAJA']].map(([key, label]) => {
+                    const price = def.prices[key];
+                    const active = (svc.difficulty || 'media') === key;
+                    return (
+                      <div key={key} className={`tier-btn ${active ? `active-${key}` : ''}`}
+                        onClick={() => update(svc.id, 'difficulty', key)}>
+                        <div className="tier-name">{label}</div>
+                        <div className="tier-price">{price ? fmtCOPShort(price) : '—'}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {isDiff && (
+              <div className="field" style={{marginBottom:12}}>
+                <label>Cantidad de ilustraciones</label>
+                <input type="number" min="1" max="50" value={svc.qty || 1}
+                  onChange={e => update(svc.id, 'qty', parseInt(e.target.value) || 1)} />
+              </div>
+            )}
+
+            {/* ── AJUSTE DE CANTIDADES ── */}
+            {!isDiff && (() => {
+              const numRows = (svc.tableRows||[]).filter(r =>
+                !r.deleted && !r.isCustom &&
+                (isNum(r.origOro) || isNum(r.origPlata) || isNum(r.origBronce))
+              );
+              if (numRows.length === 0) return null;
+              const delta = getTierAdds(svc);
+              const hasDelta = Object.values(delta).some(v => v !== 0);
+              const showT = svc.showTiers || { oro:true, plata:true, bronce:true };
+              return (
+                <div style={{marginBottom:14,borderTop:'1px solid #2A2520',paddingTop:12,marginTop:4}}>
+                  <div style={{fontSize:10,letterSpacing:'0.15em',color:'#C9A46A',textTransform:'uppercase',fontFamily:"'Inter',sans-serif",marginBottom:6}}>
+                    Ajustar cantidades
+                  </div>
+                  <div style={{fontSize:11,color:'#6A6560',marginBottom:10,fontFamily:"'Inter',sans-serif"}}>
+                    Modifica las unidades incluidas. El total se ajusta según el precio por unidad (default $100.000/u).
+                  </div>
+                  {/* Header */}
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 56px 56px 56px 76px',gap:4,marginBottom:4,paddingBottom:4,borderBottom:'1px solid #2A2520'}}>
+                    {['Ítem','ORO','PLATA','BRONCE','$/unidad'].map(h => (
+                      <span key={h} style={{fontSize:9,color:'#6A6560',textTransform:'uppercase',letterSpacing:'0.1em',fontFamily:"'Inter',sans-serif",textAlign:h==='Ítem'?'left':'center'}}>{h}</span>
+                    ))}
+                  </div>
+                  {numRows.map(row => {
+                    const changed = ['oro','plata','bronce'].some(t => {
+                      const ok = 'orig'+t.charAt(0).toUpperCase()+t.slice(1);
+                      return isNum(row[ok]) && row[t] !== row[ok];
+                    });
+                    return (
+                      <div key={row._id} style={{display:'grid',gridTemplateColumns:'1fr 56px 56px 56px 76px',gap:4,marginBottom:5,alignItems:'center',padding:'4px 0',borderBottom:'1px solid #1E1C1A'}}>
+                        <div style={{fontSize:11,color: changed ? '#C9A46A' : '#D4CFC7',fontFamily:"'Inter',sans-serif",overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={row.name||row.sub}>
+                          {row.name||row.sub||'—'}
+                        </div>
+                        {['oro','plata','bronce'].map(t => {
+                          const ok = 'orig'+t.charAt(0).toUpperCase()+t.slice(1);
+                          const editable = isNum(row[ok]);
+                          const borderC = t==='oro'?'#C9A46A55':t==='plata'?'#A0A8B055':'#C0806055';
+                          const textC   = editable ? (row[t] !== row[ok] ? (t==='oro'?'#C9A46A':t==='plata'?'#A0A8B0':'#E0906060') : '#9A9590') : '#3A3530';
+                          return (
+                            <input key={t}
+                              type={editable ? 'number' : 'text'}
+                              value={row[t]}
+                              readOnly={!editable}
+                              min="0"
+                              step="1"
+                              onChange={e => updateTableRow(svc.id, row._id, t, e.target.value)}
+                              style={{background: editable ? '#1A1714' : 'transparent',border: editable ? `1px solid ${borderC}` : 'none',
+                                color: textC,padding:'4px 2px',borderRadius:3,fontSize:11,textAlign:'center',
+                                fontFamily:"'Inter',sans-serif",outline:'none',width:'100%',cursor: editable ? 'text':'default'}}
+                            />
+                          );
+                        })}
+                        <input type="number" value={row.unitPrice ?? 100000} min="0" step="1000"
+                          onChange={e => updateTableRow(svc.id, row._id, 'unitPrice', parseInt(e.target.value)||0)}
+                          style={{background:'#1A1714',border:'1px solid #2A3020',color:'#7A9060',
+                            padding:'4px',borderRadius:3,fontSize:10,textAlign:'right',
+                            fontFamily:"'Inter',sans-serif",outline:'none',width:'100%'}}
+                        />
+                      </div>
+                    );
+                  })}
+                  {/* Delta resumen */}
+                  {hasDelta && (
+                    <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap',alignItems:'center'}}>
+                      <span style={{fontSize:9,color:'#6A6560',fontFamily:"'Inter',sans-serif",textTransform:'uppercase',letterSpacing:'0.1em'}}>Ajuste:</span>
+                      {['oro','plata','bronce'].filter(t => showT[t]).map(t => {
+                        const d = delta[t];
+                        if (!d) return null;
+                        const cl = t==='oro'?'#C9A46A':t==='plata'?'#A0A8B0':'#C08060';
+                        return (
+                          <span key={t} style={{fontSize:10,color: d>0?'#E8A060':'#80C080',fontFamily:"'Inter',sans-serif",
+                            background:'#1A1714',border:`1px solid ${cl}44`,borderRadius:3,padding:'2px 8px'}}>
+                            {t.toUpperCase()} {d>0?'+':''}{fmtCOPShort(d)}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── EDITOR DE TABLA ── */}
+            {!isDiff && (
+              <div style={{marginBottom:14,borderTop:'1px solid #2A2520',paddingTop:12,marginTop:12}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                  <div style={{fontSize:10,letterSpacing:'0.15em',color:'#C9A46A',textTransform:'uppercase',fontFamily:"'Inter',sans-serif"}}>
+                    Contenido de la tabla
+                  </div>
+                  <button
+                    onClick={() => toggleEditor(svc.id)}
+                    style={{background:'none',border:'1px solid #3A3530',color:'#9A9590',
+                      borderRadius:3,cursor:'pointer',fontSize:10,padding:'4px 10px',
+                      fontFamily:"'Inter',sans-serif",letterSpacing:'0.08em'}}>
+                    {expandedEditors[svc.id] ? '▲ Ocultar' : '▼ Editar filas'}
+                  </button>
+                </div>
+                {expandedEditors[svc.id] && (
+                  <div>
+                    <div style={{fontSize:11,color:'#6A6560',marginBottom:10,fontFamily:"'Inter',sans-serif"}}>
+                      Edita o elimina filas existentes. Agrega filas nuevas con valores por paquete y precio adicional opcional.
+                    </div>
+                    {/* Encabezado columnas */}
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 52px 52px 52px 26px',gap:3,marginBottom:4,paddingBottom:4,borderBottom:'1px solid #2A2520'}}>
+                      <span style={{fontSize:9,color:'#6A6560',textTransform:'uppercase',letterSpacing:'0.12em',fontFamily:"'Inter',sans-serif"}}>Fila</span>
+                      {['ORO','PLATA','BRONCE'].map(t => (
+                        <span key={t} style={{fontSize:9,color:'#6A6560',textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:"'Inter',sans-serif",textAlign:'center'}}>{t}</span>
+                      ))}
+                      <span></span>
+                    </div>
+                    {(svc.tableRows||[]).filter(r => !r.deleted).map(row => (
+                      <div key={row._id} style={{marginBottom:6,padding:'6px',borderRadius:4,background: row.isCustom ? '#1A1E14' : '#141210',border:`1px solid ${row.isCustom ? '#3A4530' : '#2A2520'}`}}>
+                        {/* Sección (solo custom) */}
+                        {row.isCustom && (
+                          <input type="text" placeholder="Encabezado de sección (opcional)"
+                            value={row.sectionHeader}
+                            onChange={e => updateTableRow(svc.id, row._id, 'sectionHeader', e.target.value)}
+                            style={{width:'100%',background:'transparent',border:'1px dashed #3A4530',color:'#7A9070',
+                              padding:'3px 7px',borderRadius:3,fontSize:10,fontFamily:"'Inter',sans-serif",outline:'none',marginBottom:4}}
+                          />
+                        )}
+                        {/* Fila principal: nombre + valores por tier + eliminar */}
+                        <div style={{display:'grid',gridTemplateColumns:'1fr 52px 52px 52px 26px',gap:3,alignItems:'center'}}>
+                          <input type="text" placeholder="Nombre de la fila"
+                            value={row.name}
+                            onChange={e => updateTableRow(svc.id, row._id, 'name', e.target.value)}
+                            style={{background:'#1A1714',border:'1px solid #3A3530',color:'#F0EBE1',
+                              padding:'5px 7px',borderRadius:3,fontSize:11,fontFamily:"'Inter',sans-serif",outline:'none'}}
+                          />
+                          {['oro','plata','bronce'].map(t => (
+                            <input key={t} type="text" placeholder="—"
+                              value={row[t]}
+                              onChange={e => updateTableRow(svc.id, row._id, t, e.target.value)}
+                              style={{background:'#1A1714',border:'1px solid #3A3530',color:'#C9A46A',
+                                padding:'5px 3px',borderRadius:3,fontSize:11,fontFamily:"'Inter',sans-serif",
+                                outline:'none',textAlign:'center'}}
+                            />
+                          ))}
+                          <button onClick={() => removeTableRow(svc.id, row._id)}
+                            style={{background:'none',border:'1px solid #3A3530',color:'#7A7570',
+                              borderRadius:3,cursor:'pointer',fontSize:13,lineHeight:1,padding:'4px'}}>×</button>
+                        </div>
+                        {/* Descripción (editable siempre) */}
+                        <input type="text" placeholder="Descripción (opcional)"
+                          value={row.sub}
+                          onChange={e => updateTableRow(svc.id, row._id, 'sub', e.target.value)}
+                          style={{width:'100%',background:'transparent',border:'1px solid #2A2520',color:'#7A7570',
+                            padding:'3px 7px',borderRadius:3,fontSize:10,fontFamily:"'Inter',sans-serif",outline:'none',marginTop:4}}
+                        />
+                        {/* Precios adicionales (solo filas custom) */}
+                        {row.isCustom && (
+                          <div style={{display:'grid',gridTemplateColumns:'auto 52px 52px 52px 26px',gap:3,marginTop:4,alignItems:'center'}}>
+                            <span style={{fontSize:9,color:'#6A9060',fontFamily:"'Inter',sans-serif",letterSpacing:'0.05em'}}>+ precio por paquete:</span>
+                            {[['oroPrice','#C9A46A'],['plataPrice','#A0A8B0'],['broncePrice','#C08060']].map(([pk,cl]) => (
+                              <input key={pk} type="number" placeholder="0"
+                                value={row[pk] || ''}
+                                onChange={e => updateTableRow(svc.id, row._id, pk, parseInt(e.target.value)||0)}
+                                style={{background:'#1A1714',border:`1px solid ${cl}44`,color:cl,
+                                  padding:'3px',borderRadius:3,fontSize:10,fontFamily:"'Inter',sans-serif",
+                                  outline:'none',textAlign:'center'}}
+                              />
+                            ))}
+                            <span></span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    <button onClick={() => addTableRow(svc.id)}
+                      style={{background:'none',border:'1px dashed #3A4530',color:'#6A9060',
+                        padding:'7px 14px',borderRadius:3,cursor:'pointer',fontSize:11,
+                        letterSpacing:'0.1em',textTransform:'uppercase',fontFamily:"'Inter',sans-serif",
+                        marginTop:4,width:'100%'}}>
+                      + Agregar fila
+                    </button>
+                    {(() => {
+                      const cr = (svc.tableRows||[]).filter(r => r.isCustom && !r.deleted);
+                      const tO = cr.reduce((s,r)=>s+(r.oroPrice||0),0);
+                      const tP = cr.reduce((s,r)=>s+(r.plataPrice||0),0);
+                      const tB = cr.reduce((s,r)=>s+(r.broncePrice||0),0);
+                      if (!tO && !tP && !tB) return null;
+                      return (
+                        <div style={{marginTop:8,fontSize:11,color:'#C9A46A',fontFamily:"'Inter',sans-serif",textAlign:'right'}}>
+                          + Oro {fmtCOPShort(tO)} · Plata {fmtCOPShort(tP)} · Bronce {fmtCOPShort(tB)}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="field" style={{marginBottom:0}}>
+              <label>Nota personalizada (opcional)</label>
+              <textarea
+                placeholder="Ej: Incluye 2 cajas diferentes / El cliente ya tiene troquel / Proyecto en fase 1…"
+                value={svc.customNote || ''}
+                onChange={e => update(svc.id, 'customNote', e.target.value)}
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      {/* RESUMEN DE TOTALES */}
+      <div style={{border:'1px solid #2A2520',borderRadius:6,padding:20,marginTop:8,background:'#141210'}}>
+        <div style={{fontSize:10,letterSpacing:'0.2em',color:'#9A9590',textTransform:'uppercase',marginBottom:16,fontFamily:"'Inter',sans-serif"}}>
+          Resumen de la propuesta
+        </div>
+        {services.map(svc => {
+          const def = CATALOG.find(c => c.id === svc.id);
+          if (!def) return null;
+          const isDiff = def.type === 'difficulty';
+          const ta = getTierAdds(svc);
+          const showTiers = svc.showTiers || { oro:true, plata:true, bronce:true };
+          const visTiers = ['oro','plata','bronce'].filter(t => showTiers[t]);
+
+          return (
+            <div key={svc.id} style={{borderBottom:'1px solid #2A2520',paddingBottom:10,marginBottom:10}}>
+              <div style={{fontSize:12,color:'#D4CFC7',marginBottom:6,fontFamily:"'Inter',sans-serif"}}>{def.name}</div>
+              {isDiff ? (
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span className="summary-tier-badge" style={{marginLeft:0}}>{TIER_LABELS[svc.difficulty||'media']}{(svc.qty||1)>1?` ×${svc.qty}`:''}</span>
+                  <span style={{fontSize:13,color:'#C9A46A',fontFamily:"'Inter',sans-serif"}}>
+                    {fmtCOPShort((def.prices[svc.difficulty||'media']||0)*(svc.qty||1))}
+                  </span>
+                </div>
+              ) : (
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  {visTiers.map(t => (
+                    <div key={t} style={{display:'flex',flexDirection:'column',alignItems:'center',
+                      background:'#1A1714',border:`1px solid ${t==='oro'?'#C9A46A':t==='plata'?'#A0A8B0':'#C08060'}`,
+                      borderRadius:4,padding:'6px 10px',minWidth:90}}>
+                      <span style={{fontSize:9,letterSpacing:'0.15em',color:t==='oro'?'#C9A46A':t==='plata'?'#A0A8B0':'#C08060',textTransform:'uppercase',fontFamily:"'Inter',sans-serif"}}>{t}</span>
+                      <span style={{fontSize:12,color:'#F0EBE1',marginTop:2,fontFamily:"'Inter',sans-serif"}}>
+                        {fmtCOPShort((def.prices[t]||0)+(ta[t]||0))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <div style={{display:'flex',justifyContent:'space-between',paddingTop:8,marginTop:4}}>
+          <span style={{fontSize:10,letterSpacing:'0.15em',color:'#9A9590',textTransform:'uppercase',fontFamily:"'Inter',sans-serif"}}>
+            Rango de propuesta
+          </span>
+          <span style={{fontSize:13,color:'#C9A46A',fontFamily:"'Inter',sans-serif"}}>
+            {(() => {
+              let allPrices = [];
+              services.forEach(s => {
+                const def = CATALOG.find(c => c.id === s.id);
+                if (!def) return;
+                const ta2 = getTierAdds(s);
+                if (def.type==='difficulty') {
+                  allPrices.push((def.prices[s.difficulty||'media']||0)*(s.qty||1));
+                } else {
+                  const showT = s.showTiers || {oro:true,plata:true,bronce:true};
+                  ['oro','plata','bronce'].filter(t=>showT[t]).forEach(t=>{
+                    allPrices.push((def.prices[t]||0)+(ta2[t]||0));
+                  });
+                }
+              });
+              if (allPrices.length===0) return '—';
+              const mn = Math.min(...allPrices), mx = Math.max(...allPrices);
+              return mn===mx ? fmtCOPShort(mn) : `${fmtCOPShort(mn)} – ${fmtCOPShort(mx)}`;
+            })()}
+          </span>
+        </div>
+      </div>
+
+      <div className="btn-row">
+        <button className="btn-dark" onClick={onBack}>← Atrás</button>
+        <button className="btn-gold" onClick={onGenerate}>Generar cotización →</button>
+      </div>
+    </div>
+  );
+}
+
+// URL del Apps Script — se guarda en localStorage para no reconfigurar cada vez
+const SHEETS_KEY = 'bloom_sheets_url';
+
+function StepGenerate({ clientName, date, services, quoteNumber, elaboradoPor, onBack }) {
+  const [showModal, setShowModal]     = useState(false);
+  const [estado, setEstado]           = useState('');
+  const [notaReg, setNotaReg]         = useState('');
+  const [sheetsUrl, setSheetsUrl]     = useState(() => localStorage.getItem(SHEETS_KEY) || '');
+  const [sheetsUrlTmp, setSheetsUrlTmp] = useState(() => localStorage.getItem(SHEETS_KEY) || '');
+  const [regStatus, setRegStatus]     = useState(null); // null | 'loading' | 'ok' | 'error'
+  const [showUrlConfig, setShowUrlConfig] = useState(false);
+
+  // Calcula totales para el registro — respeta el filtro showTiers por servicio
+  const calcTotals = () => {
+    let oro = 0, plata = 0, bronce = 0;
+    let hasOro = false, hasPlata = false, hasBronce = false;
+    const svcNames = [];
+    services.forEach(s => {
+      const def = CATALOG.find(c => c.id === s.id);
+      if (!def) return;
+      svcNames.push(def.name);
+      const ta = calcTierAdds(s.tableRows);
+      const showT = s.showTiers || { oro: true, plata: true, bronce: true };
+      if (def.type === 'difficulty') {
+        const v = (def.prices[s.difficulty||'media']||0)*(s.qty||1);
+        if (showT.oro    !== false) { oro    += v; hasOro    = true; }
+        if (showT.plata  !== false) { plata  += v; hasPlata  = true; }
+        if (showT.bronce !== false) { bronce += v; hasBronce = true; }
+      } else {
+        if (showT.oro    !== false) { oro    += (def.prices.oro||0)    + (ta.oro||0);    hasOro    = true; }
+        if (showT.plata  !== false) { plata  += (def.prices.plata||0)  + (ta.plata||0);  hasPlata  = true; }
+        if (showT.bronce !== false) { bronce += (def.prices.bronce!=null ? def.prices.bronce : def.prices.plata||0) + (ta.bronce||0); hasBronce = true; }
+      }
+    });
+    return {
+      oro:    hasOro    ? oro    : null,
+      plata:  hasPlata  ? plata  : null,
+      bronce: hasBronce ? bronce : null,
+      svcNames,
+    };
+  };
+
+  const registrar = async () => {
+    if (!sheetsUrl) { setShowUrlConfig(true); return; }
+    setRegStatus('loading');
+    const { oro, plata, bronce, svcNames } = calcTotals();
+    const activeVals = [oro, plata, bronce].filter(v => v !== null);
+    const payload = {
+      fecha:         date,
+      numeroCot:     quoteNumber,
+      cliente:       clientName,
+      elaboradoPor:  elaboradoPor,
+      servicios:     svcNames.join(', '),
+      totalOro:      oro    !== null ? oro    : '',
+      totalPlata:    plata  !== null ? plata  : '',
+      totalBronce:   bronce !== null ? bronce : '',
+      totalMin:      activeVals.length ? Math.min(...activeVals) : 0,
+      totalMax:      activeVals.length ? Math.max(...activeVals) : 0,
+      estado:        estado,
+      notas:         notaReg,
+    };
+    try {
+      await fetch(sheetsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      // Con mode:'no-cors' siempre llega aquí aunque haya error de red,
+      // pero si no lanzó excepción, la petición salió correctamente.
+      setRegStatus('ok');
+      setTimeout(() => { setShowModal(false); setRegStatus(null); setNotaReg(''); setEstado(''); }, 2200);
+    } catch(e) {
+      // Solo falla aquí si hay un error de red real (sin conexión, URL inválida)
+      setRegStatus('error');
+    }
+  };
+
+  // printMode=true → retorna el HTML para abrir en ventana e imprimir
+  // printMode=false → descarga como .doc
+  const generateWord = (printMode = false) => {
+    const def0 = services.length > 0 ? CATALOG.find(c => c.id === services[0].id) : null;
+    const paymentDetail = def0?.paymentDetail || 'Pago del 50% al iniciar el proyecto.\nPago del 50% para enviar paquete de archivos finales.';
+
+    let html = `<!DOCTYPE html><html lang="es">
+<head><meta charset="UTF-8">
+<title>Cotización Bloom — ${clientName || 'cliente'}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+body { font-family: 'Inter', sans-serif; font-weight: 400; color: #1a1a1a; background: white; }
+@page { margin: 15mm 18mm; size: A4 portrait; }
+h1 { font-size: 26pt; letter-spacing: 6pt; text-transform: uppercase; font-weight: 700; text-align: center; font-family: 'Inter', sans-serif; }
+h2 { font-size: 10pt; letter-spacing: 3pt; text-transform: uppercase; color: #888; text-align: center; font-family: 'Inter', sans-serif; font-weight: 400; }
+h3 { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 2pt; font-family: 'Inter', sans-serif;
+     border-bottom: 1pt solid #ccc; padding-bottom: 4pt; margin-top: 20pt; margin-bottom: 10pt; }
+table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 14pt; }
+th { background: #141210; color: white; padding: 7pt 9pt; text-align: left;
+     font-weight: 700; text-transform: uppercase; font-size: 8.5pt; font-family: 'Inter', sans-serif; }
+th.tc { text-align: center; }
+td { padding: 6pt 9pt; border-bottom: 1pt solid #f0ece4; vertical-align: top; font-family: 'Inter', sans-serif; font-weight: 400; }
+td.tc { text-align: center; }
+tr.sec td { background: #F5F2ED; font-weight: 700; font-size: 8pt; text-transform: uppercase; }
+tr.price td { background: #141210; color: white; padding: 8pt; text-align: center; font-size: 11pt; font-weight: 400; }
+tr.price td:first-child { text-align: left; font-size: 8pt; text-transform: uppercase; color: white; }
+.page { padding: 20pt 0; page-break-after: always; }
+.page:last-child { page-break-after: auto; }
+.cover { background: #141210; color: #F0EBE1; min-height: 100vh; display: flex;
+         flex-direction: column; justify-content: center; align-items: center;
+         text-align: center; padding: 60pt 50pt; }
+.cover h1 { color: #F0EBE1; margin-bottom: 24pt; }
+.cover-sub   { font-size: 9pt; letter-spacing: 3pt; color: #C9A46A; text-transform: uppercase; margin-bottom: 8pt; font-weight: 400; }
+.cover-date  { font-size: 9pt; letter-spacing: 2pt; color: #7A7570; text-transform: uppercase; font-weight: 400; }
+.cover-studio{ font-size: 8pt; letter-spacing: 4pt; color: #C9A46A; text-transform: uppercase; margin-top: 36pt; font-weight: 400; }
+.page-header { display: flex; justify-content: space-between; align-items: center;
+               padding-bottom: 8pt; border-bottom: 1pt solid #e8e4dc; margin-bottom: 16pt; }
+.page-header .cat   { font-size: 8pt; letter-spacing: 2pt; text-transform: uppercase; color: #555; font-weight: 400; }
+.page-header .bloom { font-size: 8pt; letter-spacing: 2pt; text-transform: uppercase; color: #C9A46A; font-weight: 700; }
+.section-title { font-size: 13pt; font-weight: 700; color: #1a1410; margin-bottom: 12pt; }
+.scope-title { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1pt; margin: 10pt 0 4pt; }
+.scope-text  { font-size: 9pt; color: #555; line-height: 1.7; white-space: pre-line; font-weight: 400; }
+.payment-page { background: #141210; color: #F0EBE1; padding: 30pt 36pt; min-height: 100vh; }
+.label { font-size: 8pt; letter-spacing: 2pt; color: #C9A46A; text-transform: uppercase; margin-bottom: 8pt; font-weight: 700; }
+.payment-text  { font-size: 10pt; color: #D4CFC7; line-height: 2; white-space: pre-line; margin-bottom: 18pt; font-weight: 400; }
+.terms { font-size: 8.5pt; color: #8A8580; line-height: 1.9; white-space: pre-line; font-weight: 400; }
+.note-bar { border-left: 2pt solid #C9A46A; padding-left: 8pt; font-size: 9pt; color: #555; font-style: italic; margin: 10pt 0; font-weight: 400; }
+</style></head><body>`;
+
+    // Cover
+    html += `<div class="cover page">
+  <h1>${clientName || 'CLIENTE'}</h1>
+  <p class="cover-sub">Cotización Servicios de Diseño</p>
+  <p class="cover-date">${date}</p>
+  <p class="cover-studio">Bloom Design Studio</p>
+  <p style="font-size:7.5pt;letter-spacing:2pt;color:#4A4540;text-transform:uppercase;margin-top:16pt;">${quoteNumber}</p>
+</div>`;
+
+    // Services
+    services.forEach(svc => {
+      const def = CATALOG.find(c => c.id === svc.id);
+      if (!def) return;
+
+      html += `<div class="page">`;
+      html += `<div class="page-header"><span class="cat">${def.category}</span><span class="bloom">B L O O M &nbsp; D E S I G N &nbsp; S T U D I O</span></div>`;
+      html += `<div class="section-title">${def.subtitle}</div>`;
+
+      const svcShowTiers = svc.showTiers || { oro:true, plata:true, bronce:true };
+      const svcVisTiers  = ['oro','plata','bronce'].filter(t => svcShowTiers[t]);
+      const svcDiffKey   = svc.difficulty || 'media';
+
+      if (def.type === 'tiers') {
+        const activeRowsW = (svc.tableRows||[]).filter(r => !r.deleted);
+        const taW = calcTierAdds(svc.tableRows);
+        const nColsW = 2 + svcVisTiers.length;
+        html += `<table><thead><tr>`;
+        html += `<th>${def.table?.[0]?.section || def.subtitle}</th><th>${def.table?.[0]?.col || 'Descripción'}</th>`;
+        svcVisTiers.forEach(t => { html += `<th class="tc">${t.toUpperCase()}</th>`; });
+        html += `</tr></thead><tbody>`;
+        activeRowsW.forEach(row => {
+          if (row.sectionHeader) {
+            html += `<tr class="sec"><td colspan="${nColsW}">${row.sectionHeader}</td></tr>`;
+          }
+          const rowStyle = row.isCustom ? ' style="background:#FAFAF7"' : '';
+          html += `<tr${rowStyle}><td style="font-weight:${row.name?'600':'400'}">${row.name||''}</td><td style="font-size:8.5pt;color:#555;">${row.sub||''}</td>`;
+          svcVisTiers.forEach(t => {
+            const pk = t + 'Price';
+            const cellVal = row.isCustom && row[pk] ? fmtCOPShort(row[pk]) : (row[t]||'');
+            const cellStyle = row.isCustom ? ' style="color:#5A4010"' : '';
+            html += `<td class="tc"${cellStyle}>${cellVal}</td>`;
+          });
+          html += `</tr>`;
+        });
+        html += `<tr class="price"><td colspan="2">Propuesta Económica</td>`;
+        svcVisTiers.forEach(t => {
+          const p = (def.prices[t]||0) + (taW[t]||0);
+          html += `<td>${t==='bronce'&&!def.prices.bronce ? '—' : fmtCOPShort(p)}</td>`;
+        });
+        html += `</tr></tbody></table>`;
+      } else if (def.type === 'difficulty') {
+        const extTotalDiff = (svc.extras||[]).reduce((x,e) => x+(parseInt(e.price)||0), 0);
+        html += `<table><thead><tr><th>Nivel</th><th>Descripción</th><th>Valor</th></tr></thead><tbody>`;
+        html += `<tr><td>Alta</td><td>Diseños de gran formato, desarrollo desde cero o ilustraciones complejas.</td><td>${fmtCOPShort(def.prices.alta)}</td></tr>`;
+        html += `<tr><td>Media</td><td>Piezas editoriales, ilustraciones de complejidad media.</td><td>${fmtCOPShort(def.prices.media)}</td></tr>`;
+        html += `<tr><td>Baja</td><td>Piezas para redes sociales, adaptaciones sencillas.</td><td>${fmtCOPShort(def.prices.baja)}</td></tr>`;
+        (svc.extras||[]).filter(e => e.name||e.price).forEach(extra => {
+          html += `<tr><td>${extra.name||'Adicional'}</td><td style="color:#777">${extra.desc||''}</td><td>${fmtCOPShort(parseInt(extra.price)||0)}</td></tr>`;
+        });
+        const diffPrice = (def.prices[svcDiffKey]||0)*(svc.qty||1)+extTotalDiff;
+        html += `<tr class="price"><td colspan="2">Propuesta Económica (${svc.qty||1} ilustración${(svc.qty||1)>1?'es':''} — nivel ${TIER_LABELS[svcDiffKey]})</td><td>${fmtCOPShort(diffPrice)}</td></tr>`;
+        html += `</tbody></table>`;
+      }
+
+      if (def.note)     html += `<p class="note-bar">${def.note}</p>`;
+      if (def.scope)    html += `<p class="scope-title">Alcance del servicio</p><p class="scope-text">${def.scope}</p>`;
+      if (def.inputs)   html += `<p class="scope-title">Insumos</p><p class="scope-text">${def.inputs}</p>`;
+      if (def.addl)     html += `<p class="scope-title">Servicios adicionales</p><p class="scope-text">${def.addl}</p>`;
+      if (svc.customNote) html += `<p class="scope-title">Notas adicionales</p><p class="scope-text">${svc.customNote}</p>`;
+      html += `</div>`;
+    });
+
+    // Payment page
+    html += `<div class="payment-page page">`;
+    html += `<p style="font-size:8pt;letter-spacing:4pt;color:#C9A46A;text-transform:uppercase;margin-bottom:28pt;">Bloom Design Studio</p>`;
+    html += `<p class="label">Datos para la consignación</p>`;
+    html += `<p class="payment-text">${paymentDetail}</p>`;
+    html += `<p class="payment-text">Transferencia Bancaria<br/>DANIELA GÓMEZ SAA - CC: 1144070977<br/>Bancolombia — Cuenta de Ahorros No. 825 00000 633</p>`;
+    html += `<p class="label" style="margin-top:20pt;">Términos y condiciones</p>`;
+    html += `<p class="terms">${TERMS}</p>`;
+    html += `</div>`;
+
+    // Si es modo impresión: agregar script de autoprint y retornar HTML
+    if (printMode) {
+      html += `<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script>`;
+      html += `</body></html>`;
+      return html;
+    }
+
+    // Modo descarga Word
+    html += `</body></html>`;
+    const safeName = (clientName || 'cliente').replace(/[^a-zA-Z0-9\s]/g,'').trim().replace(/\s+/g,'_');
+    try {
+      // Convertir a base64 de forma segura (soporta tildes, ñ y cualquier unicode)
+      const b64 = btoa(unescape(encodeURIComponent(html)));
+      const encoded = 'data:application/vnd.ms-word;base64,' + b64;
+      const a = document.createElement('a');
+      a.href = encoded;
+      a.download = `Cotizacion_Bloom_${safeName}.doc`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => document.body.removeChild(a), 1000);
+    } catch(e) {
+      // Fallback: abrir en nueva pestaña
+      const win = window.open('', '_blank');
+      if (win) { win.document.open(); win.document.write(html); win.document.close(); }
+      else { alert('Permite ventanas emergentes e intenta de nuevo.'); }
+    }
+  };
+
+  return (
+    <div>
+      <div className="step-label">¡Lista para generar!</div>
+      <h2 className="form-title">Tu cotización está lista</h2>
+      <p className="form-sub">El preview está a la derecha. Puedes generar el PDF imprimiendo la página, o descargar el Word editable.</p>
+
+      <div style={{border:'1px solid #2A2520',borderRadius:6,padding:20,marginBottom:20,background:'#141210'}}>
+        <div style={{fontSize:10,letterSpacing:'0.2em',color:'#9A9590',textTransform:'uppercase',marginBottom:14,fontFamily:"'Inter',sans-serif"}}>
+          Resumen final
+        </div>
+        {services.map(svc => {
+          const def = CATALOG.find(c => c.id === svc.id);
+          if (!def) return null;
+          const isDiff = def.type === 'difficulty';
+          const crG = (svc.tableRows||[]).filter(r => r.isCustom && !r.deleted);
+          const taG = {
+            oro:    crG.reduce((s,r) => s+(r.oroPrice||0), 0),
+            plata:  crG.reduce((s,r) => s+(r.plataPrice||0), 0),
+            bronce: crG.reduce((s,r) => s+(r.broncePrice||0), 0)
+          };
+          const showT = svc.showTiers || { oro:true, plata:true, bronce:true };
+          const visT  = ['oro','plata','bronce'].filter(t => showT[t]);
+          return (
+            <div key={svc.id} style={{borderBottom:'1px solid #2A2520',paddingBottom:10,marginBottom:10}}>
+              <div style={{fontSize:12,color:'#D4CFC7',marginBottom:6,fontFamily:"'Inter',sans-serif"}}>{def.name}</div>
+              {isDiff ? (
+                <div style={{display:'flex',justifyContent:'space-between'}}>
+                  <span className="summary-tier-badge" style={{marginLeft:0}}>{TIER_LABELS[svc.difficulty||'media']}</span>
+                  <span style={{fontSize:13,color:'#C9A46A',fontFamily:"'Inter',sans-serif"}}>
+                    {fmtCOPShort((def.prices[svc.difficulty||'media']||0)*(svc.qty||1))}
+                  </span>
+                </div>
+              ) : (
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  {visT.map(t => (
+                    <div key={t} style={{display:'flex',flexDirection:'column',alignItems:'center',
+                      background:'#1A1714',border:`1px solid ${t==='oro'?'#C9A46A':t==='plata'?'#A0A8B0':'#C08060'}`,
+                      borderRadius:4,padding:'5px 9px',minWidth:85}}>
+                      <span style={{fontSize:9,letterSpacing:'0.12em',color:t==='oro'?'#C9A46A':t==='plata'?'#A0A8B0':'#C08060',textTransform:'uppercase',fontFamily:"'Inter',sans-serif"}}>{t}</span>
+                      <span style={{fontSize:12,color:'#F0EBE1',fontFamily:"'Inter',sans-serif"}}>{fmtCOPShort((def.prices[t]||0)+(taG[t]||0))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <div className="summary-total">
+          <span className="summary-total-label">Rango de propuesta</span>
+          <span className="summary-total-price" style={{fontSize:16}}>
+            {(() => {
+              let allPrices = [];
+              services.forEach(s => {
+                const def = CATALOG.find(c => c.id === s.id);
+                if (!def) return;
+                const crT = (s.tableRows||[]).filter(r => r.isCustom && !r.deleted);
+                const taT = {
+                  oro:    crT.reduce((x,r) => x+(r.oroPrice||0), 0),
+                  plata:  crT.reduce((x,r) => x+(r.plataPrice||0), 0),
+                  bronce: crT.reduce((x,r) => x+(r.broncePrice||0), 0)
+                };
+                if (def.type === 'difficulty') {
+                  allPrices.push((def.prices[s.difficulty||'media']||0) * (s.qty||1));
+                } else {
+                  const showT = s.showTiers || {oro:true,plata:true,bronce:true};
+                  ['oro','plata','bronce'].filter(t => showT[t]).forEach(t => {
+                    allPrices.push((def.prices[t]||0) + (taT[t]||0));
+                  });
+                }
+              });
+              if (allPrices.length === 0) return '—';
+              const mn = Math.min(...allPrices), mx = Math.max(...allPrices);
+              return mn === mx ? fmtCOPShort(mn) : `${fmtCOPShort(mn)} – ${fmtCOPShort(mx)}`;
+            })()}
+          </span>
+        </div>
+      </div>
+
+      {/* ── NÚMERO DE COTIZACIÓN ── */}
+      <div style={{background:'#141210',border:'1px solid #3A3530',borderRadius:5,padding:'10px 14px',marginBottom:14,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <span style={{fontSize:10,letterSpacing:'0.15em',color:'#6A6560',textTransform:'uppercase',fontFamily:"'Inter',sans-serif"}}>N° Cotización</span>
+        <span style={{fontSize:13,color:'#C9A46A',fontFamily:"'Inter',sans-serif",fontWeight:600,letterSpacing:'0.05em'}}>{quoteNumber}</span>
+      </div>
+
+      <button
+        className="btn-gold"
+        style={{marginBottom:10}}
+        onClick={() => {
+          // Abre el documento en ventana nueva y lanza el diálogo de impresión
+          const html = generateWord(true);
+          const win = window.open('', '_blank', 'width=900,height=700');
+          if (!win) { alert('Permite ventanas emergentes para este sitio y vuelve a intentarlo.'); return; }
+          win.document.open();
+          win.document.write(html);
+          win.document.close();
+          win.focus();
+          setTimeout(() => { win.print(); }, 600);
+        }}
+      >
+        🖨 Abrir e Imprimir / Guardar como PDF
+      </button>
+      <button className="btn-dark" onClick={() => generateWord(false)}>
+        📄 Descargar Word (.doc)
+      </button>
+
+      {/* ── BOTÓN REGISTRAR ── */}
+      <button
+        className="btn-dark"
+        style={{marginTop:6, borderColor:'#3A5030', color:'#7AC080'}}
+        onClick={() => { setShowModal(true); setRegStatus(null); }}
+      >
+        📊 Registrar en Google Sheets
+      </button>
+
+      <div style={{marginTop:16,fontSize:11,color:'#5A5550',fontFamily:"'Inter',sans-serif",lineHeight:1.6}}>
+        <strong style={{color:'#8A8580'}}>Para PDF:</strong> Se abre una ventana nueva con el documento. El navegador muestra el diálogo de impresión. Elige "Guardar como PDF".
+      </div>
+
+      <div className="btn-row" style={{marginTop:20}}>
+        <button className="btn-dark" onClick={onBack}>← Editar</button>
+        <button className="btn-dark" onClick={() => window.location.reload()}>Nueva cotización</button>
+      </div>
+
+      {/* ── MODAL DE REGISTRO ── */}
+      {showModal && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div style={{background:'#1A1714',border:'1px solid #3A3530',borderRadius:8,padding:28,maxWidth:420,width:'100%'}}>
+            <div style={{fontSize:11,letterSpacing:'0.2em',color:'#C9A46A',textTransform:'uppercase',fontFamily:"'Inter',sans-serif",marginBottom:16}}>
+              Registrar cotización
+            </div>
+
+            {/* Resumen rápido */}
+            {(() => {
+              const { oro, plata, bronce, svcNames } = calcTotals();
+              return (
+                <div style={{background:'#141210',borderRadius:5,padding:12,marginBottom:16,fontSize:11,fontFamily:"'Inter',sans-serif"}}>
+                  <div style={{color:'#D4CFC7',marginBottom:4}}><strong>{clientName}</strong> — {date}</div>
+                  <div style={{color:'#7A7570',marginBottom:8}}>{svcNames.join(' · ')}</div>
+                  <div style={{display:'flex',gap:10}}>
+                    {[['ORO','#C9A46A',oro],['PLATA','#A0A8B0',plata],['BRONCE','#C08060',bronce]].map(([l,c,v])=>(
+                      <div key={l} style={{flex:1,textAlign:'center',borderTop:`2px solid ${c}`,paddingTop:6}}>
+                        <div style={{fontSize:9,color:c,letterSpacing:'0.1em'}}>{l}</div>
+                        <div style={{fontSize:11,color:'#F0EBE1',marginTop:2}}>{fmtCOPShort(v)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Estado */}
+            <div className="field" style={{marginBottom:12}}>
+              <label style={{fontSize:10,letterSpacing:'0.15em',color:'#9A9590',textTransform:'uppercase',fontFamily:"'Inter',sans-serif",display:'block',marginBottom:6}}>Estado</label>
+              <select value={estado} onChange={e => setEstado(e.target.value)}
+                style={{width:'100%',background:'#141210',border: estado ? '1px solid #3A3530' : '1px solid #C06050',color: estado ? '#F0EBE1' : '#7A7570',padding:'8px 12px',borderRadius:4,fontFamily:"'Inter',sans-serif",fontSize:12,outline:'none'}}>
+                <option value="" disabled>— Selecciona un estado —</option>
+                {['Enviada','En revisión','Aprobada','En espera','Rechazada','Archivada'].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              {!estado && <div style={{fontSize:10,color:'#C06050',fontFamily:"'Inter',sans-serif",marginTop:4}}>El estado es obligatorio</div>}
+            </div>
+
+            {/* Nota */}
+            <div className="field" style={{marginBottom:16}}>
+              <label style={{fontSize:10,letterSpacing:'0.15em',color:'#9A9590',textTransform:'uppercase',fontFamily:"'Inter',sans-serif",display:'block',marginBottom:6}}>Nota (opcional)</label>
+              <input type="text" value={notaReg} onChange={e => setNotaReg(e.target.value)}
+                placeholder="Ej: Cliente pidió ajuste de precio..."
+                style={{width:'100%',background:'#141210',border:'1px solid #3A3530',color:'#F0EBE1',padding:'8px 12px',borderRadius:4,fontFamily:"'Inter',sans-serif",fontSize:12,outline:'none'}}
+              />
+            </div>
+
+            {/* URL Config */}
+            <div style={{marginBottom:16,borderTop:'1px solid #2A2520',paddingTop:12}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+                <span style={{fontSize:10,color: sheetsUrl ? '#7AC080' : '#E07050',fontFamily:"'Inter',sans-serif"}}>
+                  {sheetsUrl ? '✓ Google Sheets conectado' : '⚠ Sin URL configurada'}
+                </span>
+                <button onClick={() => setShowUrlConfig(v=>!v)}
+                  style={{background:'none',border:'1px solid #3A3530',color:'#7A7570',borderRadius:3,cursor:'pointer',fontSize:10,padding:'3px 8px',fontFamily:"'Inter',sans-serif"}}>
+                  {showUrlConfig ? 'Ocultar' : 'Configurar URL'}
+                </button>
+              </div>
+              {showUrlConfig && (
+                <div style={{display:'flex',gap:6}}>
+                  <input type="text" value={sheetsUrlTmp} onChange={e => setSheetsUrlTmp(e.target.value)}
+                    placeholder="https://script.google.com/macros/s/..."
+                    style={{flex:1,background:'#141210',border:'1px solid #3A3530',color:'#9A9590',padding:'6px 10px',borderRadius:4,fontSize:10,fontFamily:"'Inter',sans-serif",outline:'none'}}
+                  />
+                  <button onClick={() => { localStorage.setItem(SHEETS_KEY, sheetsUrlTmp); setSheetsUrl(sheetsUrlTmp); setShowUrlConfig(false); }}
+                    style={{background:'#2A3520',border:'1px solid #4A5540',color:'#7AC080',borderRadius:4,cursor:'pointer',fontSize:10,padding:'6px 10px',fontFamily:"'Inter',sans-serif"}}>
+                    Guardar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Acciones */}
+            {regStatus === 'ok' && (
+              <div style={{textAlign:'center',color:'#7AC080',fontFamily:"'Inter',sans-serif",fontSize:13,marginBottom:12}}>✓ Registrado correctamente</div>
+            )}
+            {regStatus === 'error' && (
+              <div style={{color:'#E07050',fontFamily:"'Inter',sans-serif",fontSize:11,marginBottom:12}}>Error al conectar. Verifica la URL del script.</div>
+            )}
+            <div style={{display:'flex',gap:8}}>
+              <button onClick={() => setShowModal(false)}
+                style={{flex:1,background:'none',border:'1px solid #3A3530',color:'#7A7570',padding:'10px',borderRadius:4,cursor:'pointer',fontFamily:"'Inter',sans-serif",fontSize:12}}>
+                Cancelar
+              </button>
+              <button onClick={registrar} disabled={regStatus==='loading' || !estado}
+                style={{flex:2,background: estado ? '#2A3520' : '#2A2520',border: estado ? '1px solid #4A5540' : '1px solid #3A3530',color: estado ? '#7AC080' : '#5A5550',padding:'10px',borderRadius:4,cursor: estado ? 'pointer' : 'default',fontFamily:"'Inter',sans-serif",fontSize:12,fontWeight:600}}>
+                {regStatus==='loading' ? 'Registrando…' : '📊 Guardar en Sheets'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// APP PRINCIPAL
+// ──────────────────────────────────────────────────────────────────────────────
+function App() {
+  const [step, setStep] = useState(1);
+  const [clientName, setClientName] = useState('');
+  const [date, setDate] = useState(getToday());
+  const [elaboradoPor, setElaboradoPor] = useState('');
+  const [services, setServices] = useState([]);
+  const [quoteNumber, setQuoteNumber] = useState('');
+
+  const steps = [1, 2, 3, 4];
+
+  return (
+    <>
+    {/* ─── APP LAYOUT ─── */}
+    <div className="app-layout no-print" style={{display:'grid',gridTemplateColumns:'420px 1fr',height:'100vh'}}>
+      {/* LEFT: FORM */}
+      <div className="app-left">
+        <div className="bloom-logo">B L O O M  D E S I G N  S T U D I O</div>
+        <div className="step-bar">
+          {steps.map(s => (
+            <div key={s} className={`step-dot ${s < step ? 'done' : s === step ? 'active' : ''}`} />
+          ))}
+        </div>
+
+        {step === 1 && <Step1Client clientName={clientName} setClientName={setClientName} date={date} setDate={setDate} elaboradoPor={elaboradoPor} setElaboradoPor={setElaboradoPor} onNext={() => setStep(2)} />}
+        {step === 2 && <Step2Services services={services} setServices={setServices} onBack={() => setStep(1)} onNext={() => setStep(3)} />}
+        {step === 3 && <Step3Config services={services} setServices={setServices} onBack={() => setStep(2)} onGenerate={() => { setQuoteNumber(genQuoteNumber(clientName, date)); setStep(4); }} />}
+        {step === 4 && <StepGenerate clientName={clientName} date={date} services={services} quoteNumber={quoteNumber} elaboradoPor={elaboradoPor} onBack={() => setStep(3)} />}
+      </div>
+
+      {/* RIGHT: LIVE PREVIEW */}
+      <div className="app-right">
+        <div style={{fontSize:10,letterSpacing:'0.18em',color:'#5A5550',textTransform:'uppercase',marginBottom:14,fontFamily:"'Inter',sans-serif"}}>
+          Vista previa del documento
+        </div>
+        <DocumentPreview clientName={clientName} date={date} services={services} />
+      </div>
+    </div>
+
+    {/* ─── PRINT VERSION (solo al imprimir) ─── */}
+    <div className="print-doc">
+      <DocumentPreview clientName={clientName} date={date} services={services} />
+    </div>
+    </>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// LOGIN SCREEN
+// ──────────────────────────────────────────────────────────────────────────────
+const CORRECT_PASS = "C0tiz@Bl00m26";
+
+function LoginScreen({ onAuth }) {
+  const [pass, setPass] = React.useState("");
+  const [error, setError] = React.useState(false);
+
+  const handleSubmit = (e) => {
+    e && e.preventDefault();
+    if (pass === CORRECT_PASS) {
+      sessionStorage.setItem("bloom_auth", "1");
+      onAuth();
+    } else {
+      setError(true);
+      setTimeout(() => setError(false), 2000);
+    }
+  };
+
+  return (
+    <div style={{
+      minHeight:'100vh', background:'#0F0D0B',
+      display:'flex', alignItems:'center', justifyContent:'center', padding:20
+    }}>
+      <div style={{width:'100%', maxWidth:360}}>
+        <div style={{
+          fontSize:11, letterSpacing:'0.4em', color:'#C9A46A',
+          textTransform:'uppercase', textAlign:'center', marginBottom:48,
+          fontFamily:"'Inter',sans-serif", fontWeight:400
+        }}>
+          B L O O M &nbsp; D E S I G N &nbsp; S T U D I O
+        </div>
+
+        <div style={{
+          border:'1px solid #2A2520', borderRadius:8, padding:'36px 32px',
+          background:'#141210'
+        }}>
+          <div style={{
+            fontSize:18, fontWeight:300, color:'#F0EBE1',
+            marginBottom:6, letterSpacing:'0.05em', textAlign:'center'
+          }}>
+            Acceso restringido
+          </div>
+          <div style={{
+            fontSize:12, color:'#6A6560', fontFamily:"'Inter',sans-serif",
+            textAlign:'center', marginBottom:28
+          }}>
+            Ingresa la contraseña para continuar
+          </div>
+
+          <div style={{marginBottom:20}}>
+            <label style={{
+              display:'block', fontSize:10, letterSpacing:'0.2em',
+              color:'#9A9590', textTransform:'uppercase',
+              fontFamily:"'Inter',sans-serif", marginBottom:8
+            }}>Contraseña</label>
+            <input
+              type="password"
+              value={pass}
+              onChange={e => setPass(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              autoFocus
+              style={{
+                width:'100%', background:'#1A1714',
+                border: error ? '1px solid #C06050' : '1px solid #2A2520',
+                color:'#F0EBE1', padding:'12px 14px', fontSize:14,
+                fontFamily:"'Inter',sans-serif", borderRadius:4, outline:'none',
+                transition:'border-color 0.2s', boxSizing:'border-box'
+              }}
+            />
+            {error && (
+              <div style={{
+                fontSize:11, color:'#C06050', fontFamily:"'Inter',sans-serif",
+                marginTop:6
+              }}>
+                Contraseña incorrecta
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!pass}
+            style={{
+              width:'100%', background: pass ? '#C9A46A' : '#3A3530',
+              color: pass ? '#0F0D0B' : '#6A6560',
+              border:'none', padding:'13px 28px', fontSize:12,
+              letterSpacing:'0.15em', textTransform:'uppercase',
+              cursor: pass ? 'pointer' : 'default', borderRadius:3,
+              fontFamily:"'Inter',sans-serif", fontWeight:600,
+              transition:'all 0.2s'
+            }}
+          >
+            Ingresar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Root() {
+  const [auth, setAuth] = React.useState(sessionStorage.getItem('bloom_auth') === '1');
+  if (!auth) return <LoginScreen onAuth={() => setAuth(true)} />;
+  return <App />;
+}
+
+ReactDOM.render(<Root />, document.getElementById('root'));
+</script>
+</body>
+</html>
