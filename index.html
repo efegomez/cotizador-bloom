@@ -1401,11 +1401,13 @@ tr.price td:first-child { text-align: left; font-size: 8pt; text-transform: uppe
 .page:last-child { page-break-after: auto; }
 .cover { background: #141210 !important; color: #F0EBE1;
          -webkit-print-color-adjust: exact; print-color-adjust: exact;
-         min-height: 100vh; display: flex;
-         flex-direction: column; justify-content: center; align-items: center;
-         text-align: center; padding: 60pt 50pt;
+         min-height: 100vh; display: flex; flex-direction: column;
+         padding: 40pt 50pt;
          page-break-after: always; break-after: page; }
-.cover h1 { color: #F0EBE1 !important; }
+.cover-top { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: 10pt; }
+.cover-client { font-size: 14pt; letter-spacing: 6pt; text-transform: uppercase; color: #F0EBE1; font-weight: 700; font-family: 'Inter', sans-serif; }
+.cover-middle { flex: 2; display: flex; align-items: center; justify-content: center; }
+.cover-bottom { flex: 1; display: flex; align-items: flex-end; justify-content: space-between; }
 .cover h1 { color: #F0EBE1 !important; margin-bottom: 24pt; }
 .cover-sub   { font-size: 9pt; letter-spacing: 3pt; color: #C9A46A; text-transform: uppercase; margin-bottom: 8pt; font-weight: 400; }
 .cover-date  { font-size: 9pt; letter-spacing: 2pt; color: #7A7570; text-transform: uppercase; font-weight: 400; }
@@ -1429,11 +1431,16 @@ tr.price td:first-child { text-align: left; font-size: 8pt; text-transform: uppe
 
     // Cover
     html += `<div class="cover page">
-  <h1>${clientName || 'CLIENTE'}</h1>
-  <p class="cover-sub">Cotización Servicios de Diseño</p>
-  <p class="cover-date">${date}</p>
-  <img src="https://raw.githubusercontent.com/efegomez/cotizador-bloom/main/Logo_Bloom_Design_Studio02.png" alt="Bloom Design Studio" style="height:60pt;margin-top:40pt;mix-blend-mode:screen;"/>
-  <p style="font-size:7.5pt;letter-spacing:2pt;color:#4A4540;text-transform:uppercase;margin-top:16pt;">${quoteNumber}</p>
+  <div class="cover-top">
+    <p class="cover-client">${clientName || 'CLIENTE'}</p>
+  </div>
+  <div class="cover-middle">
+    <img src="https://raw.githubusercontent.com/efegomez/cotizador-bloom/main/Logo_Bloom_Design_Studio02.png" alt="Bloom Design Studio" style="width:200pt;mix-blend-mode:screen;"/>
+  </div>
+  <div class="cover-bottom">
+    <p class="cover-sub">Cotización Servicios<br/>de Diseño</p>
+    <p class="cover-date">${date}</p>
+  </div>
 </div>`;
 
     // Services
